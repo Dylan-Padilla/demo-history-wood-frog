@@ -640,7 +640,7 @@ p, s, l, g, v, a                        ## [27] [output_formats]: Output formats
 <span id="cb6-299"><a href="#cb6-299" aria-hidden="true" tabindex="-1"></a><span class="fu">save</span>(aRanSyl_gl_pops, <span class="at">file =</span> <span class="st">"/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_gl_pops.RData"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p><img src="imgs/aRanSyl_structure.png" class="img-fluid"></p>
-<p><strong>This the script to run the demographic history inference</strong></p>
+<p><strong>This script was designed to run the demographic history inference models</strong></p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
@@ -687,9 +687,9 @@ cd /Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/SFS/aRanSyl_SFS
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| output: true</span></span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">tree</span> ./SFS/aRanSyl_SFS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">tree</span> ../SFS/aRanSyl_SFS</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>./SFS/aRanSyl_SFS
+<pre><code>../SFS/aRanSyl_SFS
 └── output
     ├── dadi
     │&nbsp;&nbsp; ├── pop1-32.sfs
@@ -712,9 +712,9 @@ cd /Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/SFS/aRanSyl_SFS
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| output: true</span></span>
 <span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ex">tree</span> ./SFS/fastsimcoal</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ex">tree</span> ../SFS/fastsimcoal</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>./SFS/fastsimcoal
+<pre><code>../SFS/fastsimcoal
 ├── demographic_model_AIC_table.txt
 ├── diff_geneflow
 │&nbsp;&nbsp; ├── diff_geneflow_jointMAFpop1_0.obs
@@ -2311,7 +2311,7 @@ cd /Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/SFS/aRanSyl_SFS
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| output: true</span></span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ./SFS/fastsimcoal/demographic_model_AIC_table.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ../SFS/fastsimcoal/demographic_model_AIC_table.txt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>deltaL  AIC
 3266.32400000002    645305.776535448
@@ -2331,7 +2331,7 @@ deltaL  AIC
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| output: true</span></span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.tpl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ../SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.tpl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>//Parameters for the coalescence simulation program : fastsimcoal.exe
 2 samples to simulate :
@@ -2369,7 +2369,7 @@ FREQ 1 0 1.5e-9 OUTEXP</code></pre>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| output: true</span></span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.est</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ../SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.est</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>// Priors and rules file
 // *********************
@@ -2395,7 +2395,7 @@ FREQ 1 0 1.5e-9 OUTEXP</code></pre>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| output: true</span></span>
 <span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-la</span> ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-la</span> ../SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>total 552
 drwxr-xr-x@ 18 dpadil10  staff     576 Jan 28 18:07 .
@@ -2423,7 +2423,7 @@ drwxr-xr-x@ 25 dpadil10  staff     800 Jan 20 23:24 ..
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
 <span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| output: true</span></span>
 <span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow_maxL.par</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ../SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow_maxL.par</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>//Parameters for the coalescence simulation program : fastsimcoal.exe
 2 samples to simulate :
@@ -2461,7 +2461,7 @@ FREQ 1 0 1.5e-9 OUTEXP</code></pre>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="co">#| echo: true</span></span>
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="co">#| output: true</span></span>
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.bestlhoods</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> ../SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.bestlhoods</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>$NPOP9$ $NPOP1$ $RSANC$ $MIG1$  $MIG2$  $TPROP$ $TDIV$  $CHANGM$    MaxEstLhood MaxObsLhood
 1162    13188   0.1436895   8.07045e-05 5.32919e-05 0.1333612   3313    442 -140091.328 -136855.702</code></pre>

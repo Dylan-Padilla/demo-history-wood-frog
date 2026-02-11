@@ -515,7 +515,7 @@ save(aRanSyl_gl_pops, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADse
 ![](imgs/aRanSyl_structure.png)
 
 
-**This the script to run the demographic history inference**
+**This script was designed to run the demographic history inference models**
 
 ```{bash}
 
@@ -533,7 +533,7 @@ cat ./scripts/SFS.sh
 #| echo: true
 #| output: true
 
-tree ./SFS/aRanSyl_SFS
+tree ../SFS/aRanSyl_SFS
 
 
 ```
@@ -546,7 +546,7 @@ tree ./SFS/aRanSyl_SFS
 #| echo: true
 #| output: true
 
-tree ./SFS/fastsimcoal
+tree ../SFS/fastsimcoal
 
 
 ```
@@ -559,7 +559,7 @@ tree ./SFS/fastsimcoal
 #| echo: true
 #| output: true
 
-cat ./SFS/fastsimcoal/demographic_model_AIC_table.txt
+cat ../SFS/fastsimcoal/demographic_model_AIC_table.txt
 
 
 ```
@@ -571,7 +571,7 @@ cat ./SFS/fastsimcoal/demographic_model_AIC_table.txt
 #| echo: true
 #| output: true
 
-cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.tpl
+cat ../SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.tpl
 
 ```
 
@@ -580,7 +580,7 @@ cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.tpl
 #| echo: true
 #| output: true
 
-cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.est
+cat ../SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.est
 
 
 ```
@@ -593,7 +593,7 @@ cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.est
 #| echo: true
 #| output: true
 
-ls -la ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/
+ls -la ../SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/
 
 ```
 
@@ -602,7 +602,7 @@ ls -la ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/
 #| echo: true
 #| output: true
 
-cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow_maxL.par
+cat ../SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow_maxL.par
 
 ```
 
@@ -611,7 +611,7 @@ cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow_maxL
 #| echo: true
 #| output: true
 
-cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.bestlhoods
+cat ../SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.bestlhoods
 
 ```
 
