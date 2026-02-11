@@ -1,0 +1,1502 @@
+---
+title: ""
+author: "Dylan Padilla"
+institute: "Yale Institute for Biospheric Studies, Yale University, New Haven, CT 06511, USA."
+format: html
+engine: knitr
+---
+
+Full workflow of data analyses for:
+
+**Reconstructing the Demographic History of a Freeze-Tolerant Frog: The Interplay Between Selection and $N_e$**
+
+![](imgs/yale-logo.png)
+
+
+*For a workflow of the genome annotation, please visit [https://github.com/jodymtaft/Genome-Processing](https://github.com/jodymtaft/Genome-Processing)*
+
+
+**Population genetic analyses across the range of the wood frog:**
+
+**Ipyrad assembly pipeline**
+
+```{bash}
+
+#| echo: true
+#| output: true
+
+cat ./scripts/params-aRanSyl.txt
+
+
+```
+
+
+**R libraries**
+
+```{r, eval = FALSE}
+
+## loading packages
+
+library(adegenet)
+library(ade4)
+library(car)
+library(canadamaps)
+library(cowplot)
+library(data.table)
+library(dartRverse)
+library(dartR.popgen)
+library(ecodist)
+library(hierfstat)
+library(GenomicRanges)
+library(GO.db)
+library(clusterProfiler)
+library(geodata)
+library(LEA)
+library(lfmm)
+library(maps)
+library(mapplots)
+library(mapproj)
+library(optparse)
+library(org.Dr.eg.db)
+library(org.Mm.eg.db)
+library(org.Xl.eg.db)
+library(pegas)
+library(plotrix)
+library(poppr)
+library(prettymapr)
+library(qqman)
+library(qvalue)
+library(raster)
+library(RColorBrewer)
+library(rnaturalearth)
+library(sf)
+library(scales)
+library(SeqArray)
+library(SeqVarTools)
+library(shape)
+library(SNPRelate)
+library(stringr)
+library(terra)
+library(topGO)
+library(vegan)
+library(viridis)
+library(vcfR)
+library(xtable)
+
+
+```
+
+
+**This script was designed to perform quality control of the aRanSyl ddRADseq samples**
+
+
+```{r, eval = FALSE}
+
+
+## reading .vcf file and producing genind object
+
+my_vcf <- read.vcfR("/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/ipyrad-reference/aRanSyl_outfiles/aRanSyl_copy_reheadered_snps.vcf.gz")
+
+aRanSyl_genind <- vcfR2genind(my_vcf)
+aRanSyl_genind
+
+## Access coordinates from the vcfR object's fix slot
+
+aRanSyl_genind@other$chromosome <- my_vcf@fix[ , 1]
+aRanSyl_genind@other$position <- my_vcf@fix[ , 2]
+aRanSyl_genind
+
+## removing samples that did not pass the adapter content
+## check qc from the multiqc_report.html file
+
+ind <- c("s_272_S121_R1_001", "s_346_S186_R1_001")
+aRanSyl_genind <- aRanSyl_genind[!indNames(aRanSyl_genind) %in% ind, ]
+
+## calculate the percentage of complete genotypes per loci
+## in the aRanSyl SNP data set
+
+## remove loci with > 20% missing data
+
+aRanSyl_genind <- missingno(aRanSyl_genind, type = "loc", cutoff = 0.20)
+
+## calculate the percentage of complete genotypes per
+## individual in the aRanSyl SNP data set
+
+## remove individuals with > 20% missing genotypes
+
+aRanSyl_genind <- missingno(aRanSyl_genind, type = "geno", cutoff = 0.20)
+
+## filtering out loci with > 2 allelles
+
+n <- names(which(nAll(aRanSyl_genind) == 2))
+aRanSyl_genind <- aRanSyl_genind[loc = n]
+aRanSyl_genind
+
+## print the number of multilocus genotypes
+
+mlg(aRanSyl_genind)
+isPoly(aRanSyl_genind) %>% summary
+poly_loci_aRanSyl <- names(which(isPoly(aRanSyl_genind) == TRUE))
+aRanSyl_genind <- aRanSyl_genind[loc = poly_loci_aRanSyl]
+isPoly(aRanSyl_genind) %>% summary
+
+## convert genind object to a data frame
+
+save(aRanSyl_genind, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_genind_chr_pos.RData")
+
+## identify duplicated genotypes
+
+dups_aRanSyl <- mlg.id(aRanSyl_genind)
+for (i in dups_aRanSyl){ # for each element in the list object
+  if (length(dups_aRanSyl[i]) > 1){ # if the length is greater than 1
+    print(i) # print individuals that are duplicates
+  }
+}
+
+
+## preparing .geno file for pop structure analysis
+
+aRanSyl_gl <- gi2gl(aRanSyl_genind)
+save(aRanSyl_gl, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_gl_chr_pos.RData")
+
+
+```
+
+**This script was designed to compute pairwise Fst values across populations of aRanSyl**
+
+```{r, eval = FALSE}
+
+
+load("/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_genind_pops.RData")
+load("/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_gl_pops.RData")
+
+
+## Computing pairwise Fst test
+
+aRanSyl_fst <- genet.dist(aRanSyl_genind_pops, method = "WC84") %>% round(digits = 3)
+## saving here just in case the commands below fail
+save(aRanSyl_fst,
+     file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_fst.RData")
+
+aRanSyl_fst_mat <- as.matrix(aRanSyl_fst)
+aRanSyl_fst_mat[aRanSyl_fst_mat < 0] <- 0
+aRanSyl_fst_mat[1:4, 1:4] ## I ran this script using 1:10
+## in this command and it gave me an error because there
+## are only 9 columns, not 10
+
+save(aRanSyl_fst_mat,
+     file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_fst_mat.RData")
+
+aRanSyl_pval_fst <- gl.fst.pop(aRanSyl_gl_pops, nboots = 1000,
+                               percent = 95, nclusters = 1, verbose = NULL)
+## saving here just in case the commands below fail
+save(aRanSyl_pval_fst,
+     file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_pval_fst.RData")
+aRanSyl_fst <- as.matrix(as.dist(aRanSyl_pval_fst$Fsts))
+aRanSyl_fst[aRanSyl_fst < 0] <- 0 ## I ran this script using
+## aRanSyl_pval_fst here instead, and it gave me an error
+## because the matrix that should have been used is aRanSyl_fst
+aRanSyl_fst
+save(aRanSyl_fst,
+     file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_pval_mat.RData")
+
+
+```
+
+
+**This script was designed to examine population structure of the aRanSyl samples**
+
+
+```{r, eval = FALSE}
+
+## loading project
+
+#load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_genind.RData")
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_genind_chr_pos.RData")
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_gl_chr_pos.RData")
+#load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_gl.RData")
+
+## Converting genlight object to geno object
+gl2geno(aRanSyl_gl, outfile = "aRanSyl_geno",
+outpath = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/", verbose = NULL)
+
+
+## Run snmf algorithm
+
+snmf1 <- snmf("/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_geno.geno",
+             K = 1:10, # number of K ancestral populations to run
+             repetitions = 50, # 50 repetitions for each K
+             entropy = TRUE, # calculate cross-entropy
+             project = "new")
+
+## plotting entropy to determine K
+
+
+plot(snmf1, type = "n", xaxt = "n", yaxt = "n", las = 1)
+grid()
+par(new = TRUE)
+plot(snmf1, col = "black", cex = 1.5, pch = 19, las = 1)
+Arrows(x = 9, y = 0.295, x1 = 9, y1 = 0.305, col = "black", arr.type = "triangle",
+code = 1, lwd = 1.5, arr.length = 0.2)
+
+
+## extract the cross-entropy of all runs where K = 9
+
+ce <- cross.entropy(snmf1, K = 9)
+ce
+
+
+## find the run with the lowest cross-entropy
+
+lowest.ce <- which.min(ce)
+lowest.ce
+
+## extract Q-matrix for the best run
+
+qmatrix <- as.data.frame(Q(snmf1, K = 9, run = lowest.ce))
+head(qmatrix)
+
+## since I did not define populations a priori, each individual
+## sampled will be treated as a unique population
+
+pops <- row.names(data.frame(aRanSyl_genind))
+pops <- as.factor(pops)
+
+aRanSyl_genind$pop <- pops
+
+## plotting admixture proportions
+
+qmplot <- cbind(qmatrix, pops)
+class(qmplot)
+
+dat <- qmplot
+meta <- read.csv("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_metadata.csv")
+str(meta)
+dat$id <- meta$id
+dat$pops <- meta$pop
+dat <- dat[order(dat$pops), ]
+str(dat)
+
+## plotting panel
+
+
+layout(matrix(c(1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1,
+                2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2), ncol = 6, nrow = 4, byrow = TRUE))
+
+par(mgp = c(2.5, 1, 0))
+barplot(t(dat[1:9]), col = RColorBrewer::brewer.pal(9,"Paired"),
+border = NA, space = 0, xlab = "", xaxt = "n",  ylab = "Admixture proportion",
+las = 1, cex.lab = 1.5, cex.axis = 1)
+
+## adding population labels to the axis:
+
+medians <- c()
+
+for(i in 1:length(dat$pops)){
+    
+    axis(1, at = median(which(dat$pops == dat$pops[i])), labels = "")
+    medians <- c(medians, median(which(dat$pops == dat$pops[i])))
+}
+
+names <- c(paste(rep("Pop", 9), seq(1, 9, 1), sep = ""))
+names
+
+obj <- tapply(t(dat[1]), t(dat$pops), length)
+obj
+
+segments(x0 = 0, y0 = 0.01,
+         x1 = 0, y1 = 1, lty = 2, lwd = 2)
+
+for(i in 1:length(obj)){
+    sum <- sum(obj[1:i])
+    print(sum)
+    segments(x0 = sum, y0 = 0.01,
+             x1 = sum, y1 = 1, lty = 2, lwd = 2)
+}
+
+
+text(x = as.numeric(unique(as.character(medians))), y = par("usr")[3] - 0.06,
+     labels = names, xpd = NA, srt = 35, cex = 0.8, adj = 1)
+mtext("Populations", side = 1, line = 2.5)
+mtext("A", side = 2, at = 1.2,  line = 3.2, las = 1)
+
+
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_fst_mat.RData")
+
+fst <- as.matrix(aRanSyl_fst_mat)
+fst[fst < 0] <- 0
+colnames(fst) <- paste(rep("Pop", 9), seq(1, 9, 1), sep = "")
+rownames(fst) <- paste(rep("Pop", 9), seq(1, 9, 1), sep = "")
+
+get_lower_tri<-function(cor_matrix){
+  cor_matrix[lower.tri(cor_matrix, diag = TRUE)]
+  return(cor_matrix)
+}
+
+lower_tri_matrix <- fst[lower.tri(round(fst, 2), diag = TRUE)]
+
+my_palette <- colorRampPalette(c("lightblue", "red"))(n = 100)
+
+
+## Create matrix
+
+fst_matrix <- matrix(NA, nrow=9, ncol=9)
+fst_matrix[lower.tri(fst_matrix, diag=TRUE)] <- round(lower_tri_matrix, 2)
+labs <- paste0("Pop", 1:9)
+
+## 2. Prepare the Plotting Area
+## This is the key fix: par(mar=...) sets the margins manually.
+## Order: Bottom, Left, Top, Right. 
+## We give extra space (5 lines) to the Left for your labels.
+
+par(mar = c(5, 5, 2, 2))
+
+## 3. Create the Image
+## We transform the matrix so it looks like the table (Row 1 at top)
+## t() transposes it, and we reverse the columns to flip the y-axis
+
+grid_data <- t(fst_matrix[nrow(fst_matrix):1, ])
+
+## Generate the heatmap colors
+
+my_colors <- colorRampPalette(c("#8ccddb", "#bf6c6c", "red"))(100)
+
+image(
+  1:9, 1:9,           # X and Y coordinates
+  grid_data,          # The data
+  axes = FALSE,       # Turn off default axes (we will draw our own)
+  col = my_colors,    # Colors
+  xlab = "", ylab = ""
+)
+
+## 4. Add Custom Axes
+## Axis 2 is the Left side. 
+## We define positions 1:9, but label them in reverse
+## (Pop9 at bottom, Pop1 at top)
+axis(2, at = 1:9, labels = rev(labs), las = 2,
+     tick = FALSE, cex.axis = 1)
+
+## Axis 1 is the Bottom side.
+
+axis(1, at = 1:9, labels = labs, las = 2, tick = FALSE,
+     cex.axis = 1, las = 1)
+
+## 5. Add Text Values
+## We loop through the original matrix to place the numbers
+
+n <- 9
+for (row in 1:n) {
+  for (col in 1:n) {
+    val <- fst_matrix[row, col]
+    
+    if (!is.na(val)) {
+      # Logic: 
+      # x coordinate = column index
+      # y coordinate = n + 1 - row index (because y=1 is the bottom)
+      text(x = col, y = n + 1 - row, labels = val, col = "black", cex = 0.9)
+    }
+  }
+}
+
+## --- 3. ADD LEGEND (TOP RIGHT) ---
+## We draw the legend in the empty white space (Coordinate x=6 to x=8 approx)
+
+## Legend settings
+
+leg_x <- 6.5       # X starting position
+leg_y <- 6.0       # Y starting position (bottom of legend)
+leg_w <- 0.5       # Width of the bar
+leg_h <- 2.5       # Height of the bar
+num_cols <- length(my_colors)
+
+## Draw the Gradient Bar
+## We stack tiny rectangles on top of each other
+
+for (i in 1:num_cols) {
+  y_start <- leg_y + (i - 1) * (leg_h / num_cols)
+  y_end   <- leg_y + (i) * (leg_h / num_cols)
+  rect(
+    xleft = leg_x, 
+    ybottom = y_start, 
+    xright = leg_x + leg_w, 
+    ytop = y_end, 
+    col = my_colors[i], 
+    border = NA
+  )
+}
+
+## Add a black border around the legend bar
+
+rect(leg_x, leg_y, leg_x + leg_w, leg_y + leg_h, border = "black")
+
+## Add Legend Text Labels (0, 0.5, 1.0)
+## We map the data range (0 to 0.83) to the legend height
+
+min_val <- 0
+max_val <- max(fst_matrix, na.rm=TRUE) # approx 0.83
+
+## Label position 1 (Bottom)
+
+text(x = leg_x + leg_w + 0.2, y = leg_y, labels = min_val,
+     adj = 0, cex = 0.8)
+
+## Label position 2 (Middle)
+
+text(x = leg_x + leg_w + 0.2, y = leg_y + (leg_h / 2),
+     labels = round((max_val/2), 2), adj = 0, cex = 0.8)
+
+## Label position 3 (Top)
+text(x = leg_x + leg_w + 0.2, y = leg_y + leg_h,
+     labels = max_val, adj = 0, cex = 0.8)
+
+## Add Title above legend
+
+text(x = leg_x + (leg_w/2), y = leg_y + leg_h + 0.3,
+     labels = expression(italic(F[st])), font = 2, cex = 1)
+
+## --- 4. ADD FIGURE LABEL "B" (Top Left) ---
+## side=3 (Top), line=1 (distance from plot), adj implies
+## alignment (-0.1 moves it into left margin)
+
+mtext("B", side = 3, at = -0.48, line = 1, adj = -0.15,
+      cex = 1, font = 1)
+
+
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_genind_pops.RData")
+
+indNames(aRanSyl_genind_pops)
+aRanSyl_genind_pops$pop
+
+tab <- data.frame(id = indNames(aRanSyl_genind_pops), pop = aRanSyl_genind_pops$pop)
+head(tab)
+
+str(meta)
+admix <- merge(meta, tab[-2], by = "id")
+str(admix)
+
+pop_admix <- admix[ , c("V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8",
+"V9")]
+head(pop_admix)
+
+## find the column name with the highest value
+
+obj <- c()
+for(i in 1:nrow(pop_admix)) {
+    max_col_name <- names(pop_admix[i, ])[apply(pop_admix[i, ],
+                                                1, which.max)[which.max(apply(pop_admix[i, ],
+                                                                              1, max))]]
+    obj <- c(obj, max_col_name)
+
+}
+obj
+
+## adding a column to the admix dataframe with the new vector of names
+
+admix$pop <- obj
+str(admix)
+admix$pop <- as.factor(admix$pop)
+
+write.table(admix, "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_metadata.csv", sep = ',')
+
+aRanSyl_genind$pop <- admix$pop
+aRanSyl_genind_pops <- aRanSyl_genind
+summary(aRanSyl_genind_pops$pop)
+save(aRanSyl_genind_pops, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_genind_pops.RData")
+
+aRanSyl_gl_pops <- gi2gl(aRanSyl_genind, parallel = FALSE, verbose = NULL)
+aRanSyl_gl_pops
+save(aRanSyl_gl_pops, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_gl_pops.RData")
+
+
+```
+
+![](imgs/aRanSyl_structure.png)
+
+
+**This the script to run the demographic history inference**
+
+```{bash}
+
+#| echo: true
+#| output: true
+
+cat ./scripts/SFS.sh
+
+```
+
+**Here are results of the script described above:**
+
+```{bash}
+
+#| echo: true
+#| output: true
+
+tree ./SFS/aRanSyl_SFS
+
+
+```
+
+
+**fastsimcoal2 runs**
+
+```{bash}
+
+#| echo: true
+#| output: true
+
+tree ./SFS/fastsimcoal
+
+
+```
+
+
+**According to the AIC values, a recent gene flow model was strongly supported for inferences**
+
+```{bash}
+
+#| echo: true
+#| output: true
+
+cat ./SFS/fastsimcoal/demographic_model_AIC_table.txt
+
+
+```
+
+**Here are the .tpl and .est files of the model:**
+
+```{bash}
+
+#| echo: true
+#| output: true
+
+cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.tpl
+
+```
+
+```{bash}
+
+#| echo: true
+#| output: true
+
+cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.est
+
+
+```
+
+
+**Here are the results of the model:**
+
+```{bash}
+
+#| echo: true
+#| output: true
+
+ls -la ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/
+
+```
+
+```{bash}
+
+#| echo: true
+#| output: true
+
+cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow_maxL.par
+
+```
+
+```{bash}
+
+#| echo: true
+#| output: true
+
+cat ./SFS/fastsimcoal/recent_geneflow/fsc-selection/bestrun/recent_geneflow.bestlhoods
+
+```
+
+
+```{r, eval = FALSE}
+
+layout(matrix(c(0, 1, 1, 0,
+                0, 1, 1, 0,
+                0, 2, 2, 0,
+                0, 2, 2, 0), ncol = 4, nrow = 4, byrow = TRUE))
+
+##layout.show(n = 2)
+
+## --- 1. Define Model Parameters ---
+
+
+t_div   <- 3313       # Split time [cite: 8]
+n_pop9  <- 1162       # Ne for Pop 9 [cite: 10]
+n_pop1  <- 13188      # Ne for Pop 1 [cite: 11]
+n_anc   <- 1895       # Ne for Ancestral Pop [cite: 14]
+max_t   <- 4000       # Max time for Y-axis [cite: 6]
+
+## [cite_start]Migration rates [cite: 12, 13]
+mig_9_to_1 <- "8.07e-05 / 1.064"
+mig_1_to_9 <- "5.33e-05 / 0.062"
+
+## Widened xlim to accommodate more space (0 to 40)
+
+par(mar = c(5, 4, 4, 1), bg = "white")
+plot(NULL, xlim = c(0, 40), ylim = c(0, max_t), 
+     xlab = "", ylab = "Time (generations)", 
+     xaxt = "n", bty = "n", las = 1)
+
+## --- 3. Draw Population Boxes ---
+
+scale_w <- 0.0006 
+
+## Pop 9 - Moved to x=8
+
+x9 <- 8
+w9 <- n_pop9 * scale_w
+rect(x9 - w9, 0, x9 + w9, t_div, col = "#CAB2D6",
+     border = "#CAB2D6", lwd = 1.5)
+text(x9, -200, expression(Pop9~(N[e]==1162)),
+     xpd = TRUE, font = 2)
+
+## Pop 1 - Moved to x=32
+
+x1 <- 32
+w1 <- n_pop1 * scale_w
+rect(x1 - w1, 0, x1 + w1, t_div, col = "#A6CEE3",
+     border = "#A6CEE3", lwd = 1.5)
+text(x1, -200, expression(Pop1~(N[e]==13188)),
+     xpd = TRUE, font = 2)
+
+## Ancestral Pop (Centered above Pop 1)
+
+wa <- n_anc * scale_w
+rect(x1 - wa, t_div, x1 + wa, max_t, col = "gray40",
+     border = "black")
+text(x1, max_t + 150, expression(Ancestral~size~(N[e]==1895)),
+     xpd = TRUE, cex = 0.9)
+
+## --- 4. Draw Connections & Events ---
+## Split line adjusted to new coordinates
+
+segments(x9, t_div, x1, t_div, lwd = 2, lty = 1)
+points(x9, t_div, pch = 21, bg = "black") 
+
+## T_DIV reference line
+
+abline(h = t_div, lty = 3, col = "red")
+text(0, t_div + 140, expression(italic("Time of divergence")==3313),
+     col = "red", adj = 0, cex = 0.8)
+
+## --- 5. Add Migration Arrows (Gene Flow) ---
+## Middle point for labels
+
+mid_x <- (x9 + x1) / 2
+
+## Arrow from Pop 1 to Pop 9 (Leftward)
+
+arrows(x1 - w1 - 1, 1900, x9 + w9 + 1, 1900, 
+       col = "gold", lwd = 1, length = 0.06)
+text(mid_x - 1, 2010, mig_1_to_9, col = "goldenrod4", cex = 0.7)
+
+## Arrow from Pop 9 to Pop 1 (Rightward)
+
+arrows(x9 + w9 + 1, 1800, x1 - w1 - 1, 1800, 
+       col = "orange", lwd = 1, length = 0.06)
+text(x9 + w9 + 5, 1710, mig_9_to_1, col = "darkorange3", cex = 0.7)
+
+mtext("A", side = 2, at = 5000, line = 3.2, las = 1)
+
+## 2D-SFS ##
+
+## 1. Configuration: Set your file names and labels here
+
+infile_path <- "recent_geneflow_jointMAFpop1_0.obs"
+output_name <- "my_custom_plot.png"                
+x_label <- "Pop1"                                  
+y_label <- "Pop9"                                  
+
+## 2. Define Color Palettes (Extracted from SFStools.R) 
+
+ramp99 <- c("#A50026","#AA0426","#AF0926",
+            "#B40E26","#B91326","#BE1826",
+            "#C31D26","#C82226","#CD2726",
+            "#D22C26","#D73127","#DA372A",
+            "#DD3D2D","#E04330","#E34A33",
+            "#E65035","#E95638","#EC5C3B",
+            "#EF633E","#F26941","#F46F44",
+            "#F57647","#F67C4A","#F7834D",
+            "#F88A50","#F89053","#F99756",
+            "#FA9E59","#FBA45C","#FCAB5F",
+            "#FDB163","#FDB668","#FDBB6D",
+            "#FDC072","#FDC577","#FDCA7B",
+            "#FDCF80","#FDD485","#FDD98A",
+            "#FDDE8F","#FEE293","#FEE598",
+            "#FEE89D","#FEECA2","#FEEFA7",
+            "#FEF2AB","#FEF5B0","#FEF8B5",
+            "#FEFBBA","#FFFEBE","#FBFDC4",
+            "#F8FCCA","#F5FBD0","#F2FAD6",
+            "#EFF8DC","#ECF7E1","#E8F6E7",
+            "#E5F5ED","#E2F3F3","#DEF2F7",
+            "#D9EFF6","#D4EDF4","#CEEAF3",
+            "#C9E7F1","#C3E5F0","#BEE2EE",
+            "#B9DFEC","#B3DDEB","#AEDAE9",
+            "#A8D7E8","#A3D2E5","#9DCEE3",
+            "#97C9E0","#92C5DE","#8CC0DB",
+            "#87BCD9","#81B7D6","#7BB3D4",
+            "#76AED1","#71A9CF","#6CA3CC",
+            "#679EC9","#6298C6","#5D92C3",
+            "#598DC0","#5487BD","#4F81BA",
+            "#4A7BB7","#4576B4","#436FB1",
+            "#4169AE","#3F63AB","#3D5CA7",
+            "#3B56A4","#394FA1","#37499E",
+            "#35429B","#333C98","#313695")
+
+ramp30 <- c("#A50026","#B61026","#C72126",
+            "#D83227","#E24731","#EC5C3B",
+            "#F47145","#F7874F","#FA9E59",
+            "#FDB365","#FDC476","#FDD586",
+            "#FEE496","#FEEEA6","#FEF9B6",
+            "#F9FCC8","#EEF8DC","#E4F4F0",
+            "#D5EDF4","#C2E4EF","#B0DBEA",
+            "#9DCEE3","#8ABFDA","#77B0D2",
+            "#679DC9","#568ABF","#4676B5",
+            "#3E61AA","#374B9F","#313695")
+
+## 3. Load Data 
+
+obs <- as.matrix(read.table(infile_path, skip = 1, header = TRUE))
+
+## 4. Plotting Setup 
+
+par(mar = c(5.1, 4.1, 4.1, 4)) # Standard margins for centering
+
+## Calculate log scale for colors 
+
+uplog <- log10(max(obs, na.rm = TRUE) + 0.00001)
+br <- c(10^(seq(log10(0.5), uplog, length.out = 100)))
+
+## 5. Generate Heatmap 
+
+image(0:(dim(obs)[1]-1), 0:(dim(obs)[2]-1), obs, col = rev(ramp99), 
+      zlim = 0.5, breaks = br, axes = FALSE, xlab = "", ylab = "", main = "")
+box()
+axis(2, las = 1)
+axis(1)
+mtext(y_label, 2, line = 2.5, font = 1, cex = 0.8)
+mtext(x_label, 1, line = 2.5, font = 1, cex = 0.8)
+
+## 6. Add the Legend Scale 
+logax <- c(1, 2, 5) * rep(10^(seq(0, floor(uplog))), each = 3)
+logax <- c(0.5, logax[logax < 10^(uplog)], round(10^(uplog), 0))
+
+axis(4, at = grconvertY(0, "npc", "user") + diff(grconvertY(0:1, "npc", "user")) *
+       (log10(logax) - log10(logax)[1]) / diff(log10(logax[c(1, length(logax))])),
+     round(logax, 1), las = 2, line = 1.2, cex.axis = 0.6)
+
+rasterImage(as.raster(matrix(ramp30, ncol = 1)),
+            par('usr')[2] + 0.6 * diff(grconvertX(0:1, 'inches', 'user')) * par('cin')[2],
+            grconvertY(0, "npc", "user"),
+            par('usr')[2] + 1.2 * diff(grconvertX(0:1, 'inches', 'user')) * par('cin')[2],
+            grconvertY(1, "npc", "user"), xpd = NA)
+
+mtext(expression(N[loci]), 3,
+      at = par('usr')[2] + 0.8 * diff(grconvertX(0:1, 'inches', 'user')) * par('cin')[2], 
+      adj = 0, line = 0.5, cex = 0.7)
+mtext("B", side = 2, at = 60, line = 3.2, las = 1)
+
+
+```
+
+
+![](imgs/recent_geneflow_model_2DSFS.png)
+
+
+**This script was designed to produce a genind object per population of aRanSyl required for the estimates of $N_e$ described below**
+
+```{r, eval = FALSE}
+
+## loading project
+
+load("/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_genind.RData")
+meta <- read.csv("/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_metadata.csv")
+
+tapply(meta$seq.run, meta$pop, length)
+
+meta$pop <- as.factor(meta$pop)
+
+aRanSyl_genind_list <- vector("list", length(levels(meta$pop)))
+idx <- 1
+
+for(i in levels(meta$pop)){
+
+aRanSyl_genind_pop <- aRanSyl_genind
+
+pop <- meta[meta$pop == i, ]
+pop.ind <- pop$id
+filter.ind <- indNames(aRanSyl_genind_pop)[indNames(aRanSyl_genind_pop) %in% pop.ind]
+aRanSyl_genind_pop <- aRanSyl_genind_pop[filter.ind, ]
+aRanSyl_genind_pop$pop <- as.factor(rep(i, length(pop.ind)))
+aRanSyl_genind_list[[idx]] <- aRanSyl_genind_pop
+names(aRanSyl_genind_list)[[idx]] <- paste('aRanSyl_genind_pop','_',i, sep = '')
+
+idx = idx + 1
+
+}
+
+save(aRanSyl_genind_list, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_genind_list.RData")
+
+
+
+## converting to genlight objects
+
+aRanSyl_gl_list <- aRanSyl_genind_list
+
+for(i in 1:length(levels(meta$pop))){
+
+aRanSyl_gl_list[[i]] <- gi2gl(aRanSyl_gl_list[[i]], parallel = FALSE, verbose = NULL)
+names(aRanSyl_gl_list)[[i]] <- paste('aRanSyl_gl_pop','_',i, sep = '')
+
+}
+
+
+save(aRanSyl_gl_list, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_gl_list.RData")
+
+```
+
+**This script was designed to estimate $N_e$ across populations of aRanSyl**
+
+```{r, eval = FALSE}
+
+## set paths for different versions
+
+path.binaries <- "/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/binaries/"
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_gl_list.RData")
+aRanSyl_gl_list
+
+aRanSyl_Ne_list <- vector("list", 9)
+
+for(i in 1:9){
+
+    ## current effective population size
+
+    aRanSyl_gl <- gl.filter.allna(aRanSyl_gl_list[[i]])
+    aRanSyl_gl
+
+    aRanSyl_Ne <- gl.LDNe(aRanSyl_gl,  outfile = "popsLD.txt",
+                      neest.path = path.binaries,
+                      critical = c(0.01, 0.02, 0.05),
+                      singleton.rm = TRUE, mating = "random", plot.out = FALSE)
+    aRanSyl_Ne_list[[i]] <- aRanSyl_Ne
+    names(aRanSyl_Ne_list)[[i]] <- paste("aRanSyl_Ne_pop","_",i, sep = "")
+    save(aRanSyl_Ne_list, file = "/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/outputs/aRanSyl_Ne/aRanSyl_Ne_list.RData")
+}
+
+```
+
+
+```{r, eval = FALSE}
+
+## loading project
+
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_genind_pops.RData")
+meta <- read.csv("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_metadata.csv")
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/outputs/aRanSyl_Ne/aRanSyl_Ne_list.RData")
+
+barplot.data <- data.frame("Ne_0.05" = rep(NA, length(aRanSyl_Ne_list)),
+                           "Ne_0.02" = rep(NA, length(aRanSyl_Ne_list)),
+                           "Ne_0.01" = rep(NA, length(aRanSyl_Ne_list)),
+                           "Pops" = paste(rep("Pop", 9),seq(1, 9, 1), sep = ""))
+
+barplot.data
+
+## Getting the Ne values
+
+for(i in 1:length(aRanSyl_Ne_list)){
+
+    obj <- data.frame(aRanSyl_Ne_list[[i]])
+    barplot.data[i, c(1, 2, 3)] <-  as.numeric(obj[6, c(2, 3, 4)])
+}
+str(barplot.data)
+rownames(barplot.data) <- barplot.data[ , 4]
+
+str(meta)
+
+colnames(meta)[17] <- "Pops"
+str(meta)
+
+meta$Pops <- as.factor(meta$Pops)
+levels(meta$Pops) <- paste(rep("Pop", 9), seq(1, 9, 1), sep = "")
+
+tapply(meta$id, meta$Pops, length)
+
+submeta <- data.frame("longitude" = meta$longitude, "latitude" = meta$latitude,
+                      "Pops" = meta$Pops)
+data <- merge(submeta, barplot.data, by = "Pops")
+str(data)
+
+barplot.data <- as.matrix(barplot.data[ , -4])
+barplot.data
+
+
+
+## getting the CIs
+
+ci.data <- data.frame("CI_lower_0.05" = rep(NA, length(aRanSyl_Ne_list)),
+                      "CI_upper_0.05" = rep(NA, length(aRanSyl_Ne_list)),
+                      "CI_lower_0.02" = rep(NA, length(aRanSyl_Ne_list)),
+                      "CI_upper_0.02" = rep(NA, length(aRanSyl_Ne_list)),
+                      "CI_lower_0.01" = rep(NA, length(aRanSyl_Ne_list)),
+                      "CI_upper_0.01" = rep(NA, length(aRanSyl_Ne_list)),
+                      "Pops" = paste(rep("Pop", 9),seq(1, 9, 1), sep = ""))
+
+
+ci.data
+
+for(i in 1:length(aRanSyl_Ne_list)){
+
+    obj <- data.frame(aRanSyl_Ne_list[[i]])
+    ci.data[i, 1:6] <-  c(as.numeric(obj[7:8, 2]),
+                          as.numeric(obj[7:8, 3]),
+                          as.numeric(obj[7:8, 4]))
+}
+str(ci.data)
+rownames(ci.data) <- ci.data[ , 7]
+ci.data
+
+
+## extracting historical data you can do this using the function
+## cmip6_world in the geodata package or you can manually do on
+##the WorldClim website.  In my case, I downloaded all the 19 bio
+## variables from the website, but I used the geodata to download
+##the future climate data
+
+## download global bioclimatic data from worldclim 
+
+files <- list.files("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/climate/wc2.1_30s",
+                    full.names = TRUE)
+files
+climate.var <- stack(files)
+climate.var
+
+file <- list.files("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/climate",
+                   full.names = TRUE)
+file
+climate_future.var <- stack(file[2])
+##climate_future.var <-climate_future.var[[c(1, 4, 12, 15)]]
+climate_future.var
+
+
+## pulling out coordinates and plotting sample sites
+
+coord <- meta[ , c(3, 2)]
+head(coord)
+str(coord)
+
+
+## extracting historical environmental data for A. thaliana samples
+
+X.env <- terra::extract(x = climate.var, 
+                       y = data.frame(coord), 
+                       cells = FALSE)
+## remove IDs
+
+head(X.env)
+
+## we’ll use a simple approach to imputing missing genotype values:
+## we will impute using the most common genotype at each SNP across
+## all individuals
+
+x <- apply(aRanSyl_genind_pops$tab, 2,
+           function(x) replace(x, is.na(x),
+                               as.numeric(names(which.max(table(x))))))
+
+##x <- tab(aRanSyl_genind_pops, NA.method = "mean")
+x[1:5, 1:5]
+str(x)
+
+snppca <- as.data.frame(x)
+snppca[1:10, 1:10]
+
+## genotypes and environmental data are in the same order
+
+identical(rownames(snppca), meta[, 1])
+
+## latent factor GEA model
+
+mod_lfmm <- LEA::lfmm2(input = snppca, 
+                      env = scale(X.env), 
+                      K = 5, 
+                      effect.sizes = TRUE)
+
+## get environmental effect sizes
+
+B <- mod_lfmm@B
+
+pv <- lfmm2.test(mod_lfmm, 
+                input = snppca, 
+                env = scale(X.env), 
+                full = TRUE)
+
+
+
+## define candidate loci for GO analysis
+
+candidates <-  -log10(pv$pvalue) > 5
+(adaptive.snps <- colnames(snppca)[which(-log10(pv$pvalue) > 5)])
+write.table(as.data.frame(adaptive.snps),
+            file = "/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_adaptive_snps.txt",
+            col.names = FALSE, row.names = FALSE)
+
+
+## how many candidate loci?
+
+sum(candidates)
+length(adaptive.snps)
+
+## taking all loci for GO analysis
+## candidates =  -log10(pv$pvalue) > 0 
+
+all.loc <- data.frame(ID = colnames(snppca),
+                      pvalues = as.numeric(pv$pvalues))
+head(all.loc)
+tail(all.loc)
+
+unique.all.loc <- data.frame()
+unique.all.loc <- all.loc[seq(1, nrow(all.loc), 2), ]
+head(unique.all.loc)
+
+unique.all.loc$ID <- gsub("\\..*", "", unique.all.loc$ID)
+head(unique.all.loc)
+
+pos.loc <- read.csv("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_vcf_fix_data.csv", row.names = 1)
+head(pos.loc)
+
+fix.data <- merge(pos.loc, unique.all.loc, by = "ID")
+head(fix.data)
+
+gff <- read.delim("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRansyl_genome.gff", header = FALSE, sep = "\t")
+str(gff)
+colnames(gff) <- c("CHROM", "Source", "Type", "Start", "End",
+                   "Score", "Strand", "Phase", "Attributes")
+head(gff)
+
+
+gff.genes <- gff[gff$Type == "gene", ]
+str(gff.genes)
+
+
+
+## create GRanges objects
+
+pos_gr <- GRanges(
+  seqnames = fix.data$CHROM,
+  ranges = IRanges(fix.data$POS, width = 1)
+)
+
+genes_gr <- GRanges(
+  seqnames = gff.genes$CHROM,
+  ranges = IRanges(gff.genes$Start, gff.genes$End),
+  mcols = gff.genes[ , -c(1:3)]
+)
+
+## find overlaps
+
+overlaps <- findOverlaps(pos_gr, genes_gr)
+
+## create the resulting table efficiently
+## this joins the original position data with
+## the gene data for matching entries
+
+gene.table.optimized <- cbind(
+  fix.data[queryHits(overlaps), ],
+  gff.genes[subjectHits(overlaps), -c(1:2, 6:8)]
+)
+
+str(gene.table.optimized)
+head(gene.table.optimized)
+
+id.genes <- sub(";.*", "", gene.table.optimized$Attributes)
+id.genes <- gsub("ID=", "", id.genes)
+head(id.genes)
+
+name.genes <- sub("^.*;", "", gene.table.optimized$Attributes)
+name.genes <- gsub("Name=", "", name.genes)
+head(name.genes)
+
+gene.table.optimized$geneID <- id.genes
+gene.table.optimized$geneName <- name.genes
+head(gene.table.optimized)
+
+## GO enrichment
+
+gene.table.GO <- gene.table.optimized[c(2, 3, 9, 14, 15)]
+head(gene.table.GO)
+
+gene.table.GO <- gene.table.GO[!duplicated(gene.table.GO$geneName), ]
+gene.table.GO$geneName <-  gsub("ID=", "", gene.table.GO$geneName)
+gene.table.GO$geneName <-  gsub("_.*", "", gene.table.GO$geneName)
+head(gene.table.GO)
+
+gene.table.GO$geneID <-  gsub("aRanSyl1.0_", "", gene.table.GO$geneID)
+head(gene.table.GO)
+str(gene.table.GO)
+write.csv(gene.table.GO, file = "/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_gene_table.csv", row.names = FALSE)
+
+
+EntrezID_genes_cleaned <- as.matrix(EntrezID_genes[!is.na(EntrezID_genes)])
+EntrezID_genes_cleaned <- as.data.frame(EntrezID_genes_cleaned)
+EntrezID_genes_cleaned$geneName <- row.names(EntrezID_genes_cleaned)
+colnames(EntrezID_genes_cleaned)[1] <- "geneID"
+head(EntrezID_genes_cleaned)
+str(EntrezID_genes_cleaned)
+
+EntrezID_gene_table <- merge(gene.table.GO[-4],
+                             EntrezID_genes_cleaned,
+                             by = "geneName")
+head(EntrezID_gene_table)
+
+geneList <- setNames(EntrezID_gene_table$pvalues,
+                     EntrezID_gene_table$geneID)
+head(geneList)
+class(geneList)
+
+## I am using the Genome wide annotation for the mouse
+## published on Bioconductor
+
+GOdata <- new("topGOdata",
+	ontology = "BP",
+	allGenes = geneList,
+	geneSelectionFun = function(x) (-log10(x) > 5),
+	annot = annFUN.org , mapping = "org.Mm.eg.db")
+
+
+graph(GOdata)
+test.stat <- new("classicCount", testStatistic = GOFisherTest,
+                 name = "Fisher test")
+resultFisher <- getSigGroups(GOdata, test.stat)
+resultFisher
+
+par(cex.lab = 0.7) # Adjust font size
+showSigOfNodes(GOdata, 
+               score(resultFisher), 
+               firstSigNodes = 5, # Number of top significant nodes to display
+               useInfo = 'def',  # Display definition
+               swPlot = TRUE)
+
+
+
+## perform GO enrichment analysis
+## I am using the Genome wide annotation for the Mouse published on Bioconductor
+
+ego <- enrichGO(gene = EntrezID_gene_table$geneName,
+                OrgDb = org.Mm.eg.db,
+                keyType = "SYMBOL", # Or "ENTREZID", "ENSEMBL"
+                ont = "BP", # Biological Process, CC (Cellular Component), MF (Molecular Function)
+                pAdjustMethod = "BH",
+                qvalueCutoff = 0.05)
+
+## view results
+
+head(ego)
+ego$Description
+
+selected.go <- ego[c(119, 123, 348, 467, 557, 385), ]
+
+ego.table <- as.data.frame(ego)
+head(ego.table)
+
+terms <- ego.table[c(1, 2, 11, 9)]
+terms$Category <- rep("BP", nrow(terms))
+colnames(terms)[c(2, 3, 4)] <- c("Term", "Genes", "adj_pval")
+terms <- terms[c(5, 1, 2, 3, 4)]
+
+## setting up data for plotting manhattan plot
+
+head(fix.data)
+man <- fix.data[c(1, 2, 3, 9)]
+colnames(man) <- c("SNP", "CHR", "BP", "P")
+head(man)
+str(man)
+man$CHR <- as.numeric(factor(man$CHR))
+man <- man[man$CHR %in% c(1:13), ]
+
+## plotting manhattan plot
+
+par(mgp = c(2.7, 1, 0))
+manhattan(man, chr="CHR", bp="BP", snp="SNP", p="P", xaxt = "n",
+          ylim = c(0, 60), type = "n", cex.axis = 0.8, cex = 0.5)
+grid()
+par(new = TRUE)
+
+manhattan(man, chr="CHR", bp="BP", snp="SNP", p="P", ylim = c(0, 60),
+          yaxt = "n", ylab = "", xlab = "", cex.axis = 0.6, cex = 0.5)
+box()
+
+p1 <- recordPlot()
+
+p2 <- barplot(ego, showCategory = selected.go$Description, label_format = 80)
+
+plot_grid(p1, p2, ncol = 1, labels = "AUTO", label_fontface = "plain")
+
+
+```
+
+
+
+![](imgs/aRanSyl_adaptive_snps.png)
+
+
+
+```{r, eval = FALSE}
+
+## nc = resolution, higher is better but slower 
+
+nc = 200
+
+## range of longitude for North America
+
+long.mat <- seq(-180, -50, length = nc)
+
+## range of latitude for North America
+
+lat.mat <- seq(25, 70, length = nc)
+
+## matrix of cells for Europe (nc times nc)
+
+coord.mat <- NULL
+for (x in long.mat) 
+  for (y in lat.mat) coord.mat <- rbind(coord.mat, c(x,y))
+
+
+## extract historical climate
+
+env.new <- terra::extract(x = climate.var, 
+                         y = data.frame(coord.mat), 
+                         cells = FALSE)
+head(env.new)
+tail(env.new)
+class(env.new)
+
+## extract future climate
+
+env.pred <- terra::extract(x = climate_future.var, 
+                          y = data.frame(coord.mat), 
+                          cells = FALSE)
+head(env.pred)
+tail(env.pred)
+class(env.pred)
+
+
+## scaling bioclimatic variables (with the same scale as in the lfmm)
+
+m.x <- apply(X.env, 2, FUN = function(x) mean(x, na.rm = TRUE))
+sd.x <- apply(X.env, 2, function(x) sd(x, na.rm = TRUE))
+
+env.new <- t(t(env.new) - m.x) %*% diag(1/sd.x)
+env.pred <- t(t(env.pred) - m.x) %*% diag(1/sd.x)
+
+## geometric genomic offset for a specific long and lat
+
+mean(((env.new - env.pred)[36139,]  %*% t(B[candidates,]))^2)
+
+## gg contains the Gain et al. geometric GO computed at each matrix cell
+## be patient, it may be very slow for large nc
+
+gg <- NULL
+
+for (i in 1:nrow(env.new)){
+    gg[i] <- mean(((env.new - env.pred)[i,]  %*% t(B[candidates,]))^2,
+                  na.rm = TRUE)
+
+}
+
+## matrix of genomic offset for the Europe map
+## NA when below sea level.
+
+go <- t(matrix(gg, byrow =  FALSE, ncol = nc))
+head(go)
+
+hist(as.numeric(go), 
+     main = "Histogram of GO values",
+     xlab = "Geometric GO",
+     las = 1)
+box()
+
+layout(matrix(c(0, 1, 1, 1, 1, 0,
+                0, 1, 1, 1, 1, 0,
+                2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2), ncol = 6, nrow = 4, byrow = TRUE))
+
+
+sample.size <- paste(rep("(n = ", 9), summary(meta$Pops), ")",
+                     sep = "")
+rownames(barplot.data) <- paste(rownames(barplot.data),
+                                sample.size, sep = "\n")
+barplot.data
+
+## plotting Ne values per population
+
+par(mar = c(5.1, 6.1, 4.1, 2.1))
+
+bp <- barplot(t(barplot.data), beside = TRUE, col = "white",
+              ylim = c(0, 130), xlab = "", ylab = "", las = 1,
+              xaxt = "n", yaxt = "n", border = FALSE)
+
+grid()
+par(new = TRUE)
+
+par(mar = c(5.1, 6.1, 4.1, 2.1))
+
+barplot(t(barplot.data), beside = TRUE,
+        col = rep(RColorBrewer::brewer.pal(9,"Paired")[factor(colnames(t(barplot.data)))],
+                  each = 3),
+        ylim = c(0, 130),
+        density = rep(c(10, 20, 40), 9),
+        border = TRUE,
+        ylab = expression("Contemporary"~italic((N[e]))),
+        las = 1, cex.lab = 1.5,
+        xaxt = "n")
+
+par(new = TRUE)
+
+barplot(t(barplot.data), beside = TRUE,
+        col = alpha(rep(RColorBrewer::brewer.pal(9,"Paired")[factor(colnames(t(barplot.data)))],
+                        each = 3), 0.5),
+        ylim = c(0, 130),
+        border = FALSE,
+        ylab = "",
+        xlab = "",
+        xaxt = "n",
+        yaxt = "n",
+        las = 1)
+
+box()
+
+idx <- 1
+for(i in seq(2, 27, 3)){
+    axis(1, at = bp[i], labels = rownames(barplot.data)[idx],
+         padj = 0.5, cex.axis = 0.8)
+    idx = idx + 1
+}
+
+ci <- aggregate(cbind(CI_lower_0.05, CI_upper_0.05, CI_lower_0.02,
+                      CI_upper_0.02, CI_lower_0.01, CI_upper_0.01)~Pops,
+                data=ci.data , print)
+rownames(ci) <- ci[,1]
+ci <- ci[, -1]
+ci
+
+CIs <- rbind(abs(barplot.data[ , 1]-ci[ , 1]),
+             abs(barplot.data[ , 1]-ci[ , 2]),
+             abs(barplot.data[ , 2]-ci[ , 3]),
+             abs(barplot.data[ , 2]-ci[ , 4]),
+             abs(barplot.data[ , 3]-ci[ , 5]),
+             abs(barplot.data[ , 3]-ci[ , 6]))
+
+rownames(CIs) <- colnames(ci)
+CIs
+
+
+Nes <- rbind(barplot.data[ , 1],
+             barplot.data[ , 2],
+             barplot.data[ , 3])
+
+Nes
+
+bp
+
+idx <- 1
+idx2 <- 2
+for(i in 1:nrow(Nes)){
+
+    arrows(x0 = bp[i, ], y0 = abs(Nes[i, ]-CIs[idx, ]),
+           x1 = bp[i, ], y1 = abs(Nes[i, ]+CIs[idx2, ]),
+           code = 3, angle = 90, length = 0.04, col = "black")
+    idx = idx + 2
+    idx2 = idx2 + 2
+}
+
+legend("topright", legend = c("0.05", "0.02", "0.01"), density = c(10, 20, 40),
+       title = "Critical value", bty = "n", cex = 1, border = TRUE)
+mtext("A", side = 2, line = 3.2, at = 150, las = 1)
+
+
+
+## plotting a map with GO values
+
+## my colors - they might change the story!
+
+my.colors <- colorRampPalette(c("lightblue3", "orange2", "red3"))(100)
+
+par(mar = c(3.1, 4.1, 0, 2.1), mgp = c(2, 0.8, 0))
+
+image(long.mat, lat.mat, go,
+      col = "white",
+      las = 1,
+      xlab = "Longitude",
+      ylab = "Latitude",
+      xlim = c(-180, -50),
+      ylim = c(25, 70),
+      smallplot = NULL,
+      legend = NULL,
+      cex.axis = 1,
+      cex.lab = 1.5)
+
+grid()
+
+par(new = TRUE)
+
+par(mar = c(3.1, 4.1, 0, 2.1), mgp = c(2, 0.8, 0))
+
+image(long.mat, lat.mat, go,
+      col = my.colors,
+      las = 1,
+      xlab = "Longitude",
+      ylab = "Latitude",
+      xlim = c(-180, -50),
+      ylim = c(25, 70),
+      smallplot = NULL,
+      legend = NULL,
+      cex.axis = 1,
+      cex.lab = 1.5)
+
+
+maps::map(add = TRUE, interior = FALSE, col = "grey40")
+map("state", fill = TRUE, col = "transparent", bg = "white", add = TRUE)
+## getting Canada data (sf format)
+canada_sf <- ne_states(country = "Canada", returnclass = "sf")
+map(canada_sf, fill = TRUE, col = "transparent", bg = "white", add = TRUE)
+
+## plotting samples.  Dot sizes correspond to values of Nes
+
+with(data, points(longitude, latitude, pch = 21,
+                  bg = RColorBrewer::brewer.pal(9,"Paired")[Pops],
+                  col = alpha("black", 0.3)))
+
+legend(x = -180, y = 50, legend = levels(data$Pops), pch = 19,
+       col = RColorBrewer::brewer.pal(9,"Paired"), bty = "n",
+       cex = 1)
+
+addnortharrow(pos = "bottomleft", scale = 0.4)
+
+par(new = TRUE)
+
+par(mar = c(3.1, 4.1, 0, 2.1), mgp = c(2, 0.8, 0))
+
+options(scipen = -100)
+options(digits = 2)
+fields::image.plot(long.mat, lat.mat, go,
+                   legend.only = TRUE,
+                   horizontal = TRUE,
+                   legend.args = list(text = "Genomic offset", side = 3,
+                                      line = 0.5, cex = 0.8),
+                   axis.args = list(cex.axis = 0.56, mgp = c(3, 0.5, 0)), 
+                   smallplot = c(0.19, 0.43, 0.28, 0.29), col = my.colors)
+mtext("B", side = 2, line = 3, at = 79, las = 1)
+
+
+```
+
+
+![](imgs/Ne_GO.png)
+

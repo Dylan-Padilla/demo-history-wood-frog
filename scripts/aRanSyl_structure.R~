@@ -1,0 +1,394 @@
+##### This script was designed to estimate population structure of the aRanSyl  ######
+
+## loading packages
+
+library(adegenet)
+library(ade4)
+library(car)
+library(canadamaps)
+library(data.table)
+library(dartRverse)
+library(ecodist)
+library(hierfstat)
+library(LEA)
+library(lfmm)
+library(maps)
+library(mapplots)
+library(mapproj)
+library(rnaturalearth)
+library(pegas)
+library(poppr)
+library(prettymapr)
+library(qvalue)
+library(sf)
+library(scales)
+library(SeqArray)
+library(SeqVarTools)
+library(shape)
+library(SNPRelate)
+library(stringr)
+library(vcfR)
+library(xtable)
+
+
+## loading project
+
+#load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_genind.RData")
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_genind_chr_pos.RData")
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_gl_chr_pos.RData")
+#load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_gl.RData")
+
+## Converting genlight object to geno object
+gl2geno(aRanSyl_gl, outfile = "aRanSyl_geno",
+outpath = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/", verbose = NULL)
+
+
+## Run snmf algorithm
+
+snmf1 <- snmf("/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_geno.geno",
+             K = 1:10, # number of K ancestral populations to run
+             repetitions = 50, # 50 repetitions for each K
+             entropy = TRUE, # calculate cross-entropy
+             project = "new")
+
+## plotting entropy to determine K
+
+
+png("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/imgs/cross-entropy.png",
+width = 7, height = 7, units = 'in', res = 360)
+
+plot(snmf1, type = "n", xaxt = "n", yaxt = "n", las = 1)
+grid()
+par(new = TRUE)
+plot(snmf1, col = "black", cex = 1.5, pch = 19, las = 1)
+Arrows(x = 9, y = 0.295, x1 = 9, y1 = 0.305, col = "black", arr.type = "triangle",
+code = 1, lwd = 1.5, arr.length = 0.2)
+
+dev.off()
+
+## extract the cross-entropy of all runs where K = 9
+
+ce <- cross.entropy(snmf1, K = 9)
+ce
+
+
+## find the run with the lowest cross-entropy
+
+lowest.ce <- which.min(ce)
+lowest.ce
+
+## extract Q-matrix for the best run
+
+qmatrix <- as.data.frame(Q(snmf1, K = 9, run = lowest.ce))
+head(qmatrix)
+
+## since I did not define populations a priori, each individual
+## sampled will be treated as a unique population
+
+pops <- row.names(data.frame(aRanSyl_genind))
+pops <- as.factor(pops)
+
+aRanSyl_genind$pop <- pops
+
+## plotting admixture proportions
+
+qmplot <- cbind(qmatrix, pops)
+class(qmplot)
+
+dat <- qmplot
+meta <- read.csv("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_metadata.csv")
+str(meta)
+dat$id <- meta$id
+dat$pops <- meta$pop
+dat <- dat[order(dat$pops), ]
+str(dat)
+
+## plotting panel
+
+png("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/imgs/aRanSyl_structure.png",
+width = 7, height = 7, units = 'in', res = 360)
+
+layout(matrix(c(1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1,
+                2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2), ncol = 6, nrow = 4, byrow = TRUE))
+
+par(mgp = c(2.5, 1, 0))
+barplot(t(dat[1:9]), col = RColorBrewer::brewer.pal(9,"Paired"),
+border = NA, space = 0, xlab = "", xaxt = "n",  ylab = "Admixture proportion",
+las = 1, cex.lab = 1.5, cex.axis = 1)
+
+## adding population labels to the axis:
+
+medians <- c()
+
+for(i in 1:length(dat$pops)){
+    
+    axis(1, at = median(which(dat$pops == dat$pops[i])), labels = "")
+    medians <- c(medians, median(which(dat$pops == dat$pops[i])))
+}
+
+names <- c(paste(rep("Pop", 9), seq(1, 9, 1), sep = ""))
+names
+
+obj <- tapply(t(dat[1]), t(dat$pops), length)
+obj
+
+segments(x0 = 0, y0 = 0.01,
+         x1 = 0, y1 = 1, lty = 2, lwd = 2)
+
+for(i in 1:length(obj)){
+    sum <- sum(obj[1:i])
+    print(sum)
+    segments(x0 = sum, y0 = 0.01,
+             x1 = sum, y1 = 1, lty = 2, lwd = 2)
+}
+
+
+text(x = as.numeric(unique(as.character(medians))), y = par("usr")[3] - 0.06, labels = names, xpd = NA, srt = 35, cex = 0.8, adj = 1)
+mtext("Populations", side = 1, line = 2.5)
+mtext("A", side = 2, at = 1.2,  line = 3.2, las = 1)
+
+
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_fst_mat.RData")
+
+fst <- as.matrix(aRanSyl_fst_mat)
+fst[fst < 0] <- 0
+colnames(fst) <- paste(rep("Pop", 9), seq(1, 9, 1), sep = "")
+rownames(fst) <- paste(rep("Pop", 9), seq(1, 9, 1), sep = "")
+
+get_lower_tri<-function(cor_matrix){
+  cor_matrix[lower.tri(cor_matrix, diag = TRUE)]
+  return(cor_matrix)
+}
+
+lower_tri_matrix <- fst[lower.tri(round(fst, 2), diag = TRUE)]
+
+my_palette <- colorRampPalette(c("lightblue", "red"))(n = 100)
+
+
+# Create matrix
+fst_matrix <- matrix(NA, nrow=9, ncol=9)
+fst_matrix[lower.tri(fst_matrix, diag=TRUE)] <- round(lower_tri_matrix, 2)
+labs <- paste0("Pop", 1:9)
+
+# 2. Prepare the Plotting Area
+# This is the key fix: par(mar=...) sets the margins manually.
+# Order: Bottom, Left, Top, Right. 
+# We give extra space (5 lines) to the Left for your labels.
+par(mar = c(5, 5, 2, 2))
+
+# 3. Create the Image
+# We transform the matrix so it looks like the table (Row 1 at top)
+# t() transposes it, and we reverse the columns to flip the y-axis
+grid_data <- t(fst_matrix[nrow(fst_matrix):1, ])
+
+# Generate the heatmap colors
+my_colors <- colorRampPalette(c("#8ccddb", "#bf6c6c", "red"))(100)
+
+image(
+  1:9, 1:9,           # X and Y coordinates
+  grid_data,          # The data
+  axes = FALSE,       # Turn off default axes (we will draw our own)
+  col = my_colors,    # Colors
+  xlab = "", ylab = ""
+)
+
+# 4. Add Custom Axes
+# Axis 2 is the Left side. 
+# We define positions 1:9, but label them in reverse (Pop9 at bottom, Pop1 at top)
+axis(2, at = 1:9, labels = rev(labs), las = 2, tick = FALSE, cex.axis = 1)
+
+# Axis 1 is the Bottom side.
+axis(1, at = 1:9, labels = labs, las = 2, tick = FALSE, cex.axis = 1)
+
+# 5. Add Text Values
+# We loop through the original matrix to place the numbers
+n <- 9
+for (row in 1:n) {
+  for (col in 1:n) {
+    val <- fst_matrix[row, col]
+    
+    if (!is.na(val)) {
+      # Logic: 
+      # x coordinate = column index
+      # y coordinate = n + 1 - row index (because y=1 is the bottom)
+      text(x = col, y = n + 1 - row, labels = val, col = "cyan", cex = 0.9)
+    }
+  }
+}
+
+# --- 3. ADD LEGEND (TOP RIGHT) ---
+# We draw the legend in the empty white space (Coordinate x=6 to x=8 approx)
+
+# Legend settings
+leg_x <- 6.5       # X starting position
+leg_y <- 6.0       # Y starting position (bottom of legend)
+leg_w <- 0.5       # Width of the bar
+leg_h <- 2.5       # Height of the bar
+num_cols <- length(my_colors)
+
+# Draw the Gradient Bar
+# We stack tiny rectangles on top of each other
+for (i in 1:num_cols) {
+  y_start <- leg_y + (i - 1) * (leg_h / num_cols)
+  y_end   <- leg_y + (i) * (leg_h / num_cols)
+  rect(
+    xleft = leg_x, 
+    ybottom = y_start, 
+    xright = leg_x + leg_w, 
+    ytop = y_end, 
+    col = my_colors[i], 
+    border = NA
+  )
+}
+
+# Add a black border around the legend bar
+rect(leg_x, leg_y, leg_x + leg_w, leg_y + leg_h, border = "black")
+
+# Add Legend Text Labels (0, 0.5, 1.0)
+# We map the data range (0 to 0.83) to the legend height
+min_val <- 0
+max_val <- max(values, na.rm=TRUE) # approx 0.83
+
+# Label position 1 (Bottom)
+text(x = leg_x + leg_w + 0.2, y = leg_y, labels = min_val, adj = 0, cex = 0.8)
+
+# Label position 2 (Middle)
+text(x = leg_x + leg_w + 0.2, y = leg_y + (leg_h / 2),
+     labels = round((max_val/2), 2), adj = 0, cex = 0.8)
+
+# Label position 3 (Top)
+text(x = leg_x + leg_w + 0.2, y = leg_y + leg_h, labels = max_val, adj = 0, cex = 0.8)
+
+# Add Title above legend
+text(x = leg_x + (leg_w/2), y = leg_y + leg_h + 0.3, labels = "Fst", font = 2, cex = 1)
+
+# --- 4. ADD FIGURE LABEL "B" (Top Left) ---
+# side=3 (Top), line=1 (distance from plot), adj implies alignment (-0.1 moves it into left margin)
+mtext("B", side = 3, at = -0.48, line = 1, adj = -0.15, cex = 1, font = 1)
+
+
+dev.off()
+
+## plotting haplotypes on a map to better visualize their distribution
+
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_genind_pops.RData")
+
+indNames(aRanSyl_genind_pops)
+aRanSyl_genind_pops$pop
+
+tab <- data.frame(id = indNames(aRanSyl_genind_pops), pop = aRanSyl_genind_pops$pop)
+head(tab)
+
+str(meta)
+admix <- merge(meta, tab[-2], by = "id")
+str(admix)
+
+
+## setting up the plotting area and draw the map
+
+
+png("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/imgs/admixture-map.png", 
+width = 7, height = 7, units = 'in', res = 360)
+
+
+layout(matrix(c(1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1,
+                2, 2, 1, 1, 1, 1,
+                2, 2, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1), nrow = 6, ncol = 6, byrow = TRUE))
+
+
+## plotting North America map using base R graphics
+
+map("world", xlim = c(-180, -50), ylim = c(25, 70),
+fill = FALSE, col = "white", bg = "white",
+ylab = 'Latitude', xlab = 'Longitude')
+grid()
+map("world", xlim = c(-180, -50), ylim = c(25, 70),
+fill = TRUE, col = "#636363", bg = "white",
+ylab = 'Latitude', xlab = 'Longitude', add = TRUE)
+map("state", fill = TRUE, col = "#636363", bg = "white", add = TRUE)
+## getting Canada data (sf format)
+canada_sf <- ne_states(country = "Canada", returnclass = "sf")
+map(canada_sf, fill = TRUE, col = "#636363", bg = "white", add = TRUE)
+
+## adding axes
+
+box()
+ticks_x <- seq(-160, -50, 20)
+ticks_y <- seq(25, 70, 15)
+
+for(i in ticks_x){
+    axis(1, at = i, labels = '')
+}
+text(x = ticks_x, y = par("usr")[3] - 3, labels = ticks_x, xpd = NA, cex = 0.8)
+mtext(side = 1, 'Longitude', line = 2.2, at = -105)
+
+for(i in ticks_y){
+    axis(2, at = i, labels = '')
+}
+text(x = par("usr")[1] - 3, y = ticks_y, labels = ticks_y, xpd = NA, cex = 0.8)
+mtext(side = 2, 'Latitude', line = 0.9, at = 48)
+
+
+## adding admixture proportions
+
+for(i in 1:nrow(admix)){
+    add.pie(z = c(admix$V1[i], admix$V2[i], admix$V3[i], admix$V4[i],
+    admix$V5[i], admix$V6[i], admix$V7[i], admix$V8[i], admix$V9[i]),
+            x = admix$long[i], y = admix$lat[i],
+            radius = 0.7, col = RColorBrewer::brewer.pal(9,"Paired"),
+            labels = "", border = FALSE)
+}
+
+addnortharrow(pos = "topleft", scale = 0.4)
+
+pops <- c("Pop1", "Pop2", "Pop3", "Pop4", "Pop5", "Pop6", "Pop7", "Pop8", "Pop9")
+legend("bottomright", legend = pops, pch = 16,
+       col = RColorBrewer::brewer.pal(9,"Paired"), bty = "n")
+
+
+## plotting cross entropy
+
+par(mar = c(9, 7, 0.1, 2), mgp = c(1.6, 0.6, 0))
+plot(snmf1, col = "black", cex = 0.8, pch = 19, las = 1, cex.lab = 0.6, cex.axis = 0.6)
+Arrows(x = 9, y = 0.295, x1 = 9, y1 = 0.305, col = "black", arr.type = "triangle",
+       code = 1, lwd = 0.8, arr.length = 0.06)
+
+dev.off()
+
+
+pop_admix <- admix[ , c("V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8",
+"V9")]
+head(pop_admix)
+
+## find the column name with the highest value
+
+obj <- c()
+for(i in 1:nrow(pop_admix)) {
+    max_col_name <- names(pop_admix[i, ])[apply(pop_admix[i, ], 1, which.max)[which.max(apply(pop_admix[i, ], 1, max))]]
+    obj <- c(obj, max_col_name)
+
+}
+obj
+
+## adding a column to the admix dataframe with the new vector of names
+
+admix$pop <- obj
+str(admix)
+admix$pop <- as.factor(admix$pop)
+
+write.table(admix, "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_metadata.csv", sep = ',')
+
+aRanSyl_genind$pop <- admix$pop
+aRanSyl_genind_pops <- aRanSyl_genind
+summary(aRanSyl_genind_pops$pop)
+save(aRanSyl_genind_pops, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_genind_pops.RData")
+
+aRanSyl_gl_pops <- gi2gl(aRanSyl_genind, parallel = FALSE, verbose = NULL)
+aRanSyl_gl_pops
+save(aRanSyl_gl_pops, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_gl_pops.RData")
+

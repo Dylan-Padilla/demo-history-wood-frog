@@ -1,0 +1,744 @@
+##### This script was designed to estimate population structure of the aRanSyl  ######
+
+## loading packages
+
+
+library(adegenet)
+library(ade4)
+library(car)
+library(canadamaps)
+library(cowplot)
+library(data.table)
+library(dartRverse)
+library(ecodist)
+library(hierfstat)
+library(GenomicRanges)
+library(GO.db)
+library(clusterProfiler)
+library(geodata)
+library(LEA)
+library(lfmm)
+library(maps)
+library(mapplots)
+library(mapproj)
+library(org.Dr.eg.db)
+library(org.Mm.eg.db)
+library(org.Xl.eg.db)
+library(pegas)
+library(poppr)
+library(prettymapr)
+library(qqman)
+library(qvalue)
+library(raster)
+library(RColorBrewer)
+library(rnaturalearth)
+library(sf)
+library(scales)
+library(SeqArray)
+library(SeqVarTools)
+library(shape)
+library(SNPRelate)
+library(stringr)
+library(terra)
+library(topGO)
+library(vegan)
+library(viridis)
+library(vcfR)
+library(xtable)
+
+
+## loading project
+
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_genind_pops.RData")
+meta <- read.csv("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_metadata.csv")
+load("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/outputs/aRanSyl_Ne/aRanSyl_Ne_list.RData")
+
+barplot.data <- data.frame("Ne_0.05" = rep(NA, length(aRanSyl_Ne_list)),
+                           "Ne_0.02" = rep(NA, length(aRanSyl_Ne_list)),
+                           "Ne_0.01" = rep(NA, length(aRanSyl_Ne_list)),
+                           "Pops" = paste(rep("Pop", 9),seq(1, 9, 1), sep = ""))
+
+barplot.data
+
+## Getting the Ne values
+
+for(i in 1:length(aRanSyl_Ne_list)){
+
+    obj <- data.frame(aRanSyl_Ne_list[[i]])
+    barplot.data[i, c(1, 2, 3)] <-  as.numeric(obj[6, c(2, 3, 4)])
+}
+str(barplot.data)
+rownames(barplot.data) <- barplot.data[ , 4]
+
+str(meta)
+
+colnames(meta)[17] <- "Pops"
+str(meta)
+
+meta$Pops <- as.factor(meta$Pops)
+levels(meta$Pops) <- paste(rep("Pop", 9), seq(1, 9, 1), sep = "")
+
+tapply(meta$id, meta$Pops, length)
+
+submeta <- data.frame("longitude" = meta$longitude, "latitude" = meta$latitude,
+                      "Pops" = meta$Pops)
+data <- merge(submeta, barplot.data, by = "Pops")
+str(data)
+
+barplot.data <- as.matrix(barplot.data[ , -4])
+barplot.data
+
+
+
+## getting the CIs
+
+ci.data <- data.frame("CI_lower_0.05" = rep(NA, length(aRanSyl_Ne_list)),
+                      "CI_upper_0.05" = rep(NA, length(aRanSyl_Ne_list)),
+                      "CI_lower_0.02" = rep(NA, length(aRanSyl_Ne_list)),
+                      "CI_upper_0.02" = rep(NA, length(aRanSyl_Ne_list)),
+                      "CI_lower_0.01" = rep(NA, length(aRanSyl_Ne_list)),
+                      "CI_upper_0.01" = rep(NA, length(aRanSyl_Ne_list)),
+                      "Pops" = paste(rep("Pop", 9),seq(1, 9, 1), sep = ""))
+
+
+ci.data
+
+for(i in 1:length(aRanSyl_Ne_list)){
+
+    obj <- data.frame(aRanSyl_Ne_list[[i]])
+    ci.data[i, 1:6] <-  c(as.numeric(obj[7:8, 2]),
+                          as.numeric(obj[7:8, 3]),
+                          as.numeric(obj[7:8, 4]))
+}
+str(ci.data)
+rownames(ci.data) <- ci.data[ , 7]
+#ci.data <- as.matrix(ci.data[ , -7])
+ci.data
+
+
+## extracting historical data you can do this using the function
+## cmip6_world in the geodata package or you can manually do on
+##the WorldClim website.  In my case, I downloaded all the 19 bio
+## variables from the website, but I used the geodata to download
+##the future climate data
+
+## download global bioclimatic data from worldclim 
+
+#climate <- geodata::worldclim_global(var = 'bio', 
+#                                     res = 0.5, 
+#                                     download = TRUE, 
+#                                     path= "/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/")
+#save(climate, file = "/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/climate.RData")
+files <- list.files("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/climate/wc2.1_30s", full.names = TRUE)
+files
+##climate.var <- stack(files[c(1,  14, 4, 7)])
+climate.var <- stack(files)
+climate.var
+
+
+## download future climate scenario from 'ACCESS-ESM1-5' climate model.
+
+#climate_future <- geodata::cmip6_world(model = 'ACCESS-ESM1-5', 
+#                                       ssp = '245', 
+#                                       time = '2041-2060', 
+#                                       var = 'bioc', 
+#                                       download = TRUE, 
+#                                       res = 0.5,  
+#                                       path = "/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/")
+#save(climate_future, file = "/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/climate_future.RData")
+file <- list.files("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/climate", full.names = TRUE)
+file
+climate_future.var <- stack(file[2])
+##climate_future.var <-climate_future.var[[c(1, 4, 12, 15)]]
+climate_future.var
+
+
+## pulling out coordinates and plotting sample sites
+
+coord <- meta[ , c(3, 2)]
+head(coord)
+str(coord)
+
+
+## extracting historical environmental data for A. thaliana samples
+
+X.env <- terra::extract(x = climate.var, 
+                       y = data.frame(coord), 
+                       cells = FALSE)
+## remove IDs
+
+head(X.env)
+
+## we’ll use a simple approach to imputing missing genotype values:
+## we will impute using the most common genotype at each SNP across
+## all individuals
+
+x <-  apply(aRanSyl_genind_pops$tab, 2,
+            function(x) replace(x, is.na(x),
+                                as.numeric(names(which.max(table(x))))))
+
+##x <- tab(aRanSyl_genind_pops, NA.method = "mean")
+x[1:5, 1:5]
+str(x)
+
+snppca <- as.data.frame(x)
+snppca[1:10, 1:10]
+
+## genotypes and environmental data are in the same order
+
+identical(rownames(snppca), meta[, 1])
+
+## latent factor GEA model
+
+mod_lfmm <- LEA::lfmm2(input = snppca, 
+                      env = scale(X.env), 
+                      K = 5, 
+                      effect.sizes = TRUE)
+
+## get environmental effect sizes
+
+B <- mod_lfmm@B
+
+pv <- lfmm2.test(mod_lfmm, 
+                input = snppca, 
+                env = scale(X.env), 
+                full = TRUE)
+
+
+
+## define candidate loci for GO analysis
+
+candidates <-  -log10(pv$pvalue) > 5
+(adaptive.snps <- colnames(snppca)[which(-log10(pv$pvalue) > 5)])
+write.table(as.data.frame(adaptive.snps),
+            file = "/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_adaptive_snps.txt",
+            col.names = FALSE, row.names = FALSE)
+
+
+## how many candidate loci?
+
+sum(candidates)
+length(adaptive.snps)
+
+## taking all loci for GO analysis
+## candidates =  -log10(pv$pvalue) > 0 
+
+all.loc <- data.frame(ID = colnames(snppca), pvalues = as.numeric(pv$pvalues))
+head(all.loc)
+tail(all.loc)
+
+unique.all.loc <- data.frame()
+unique.all.loc <- all.loc[seq(1, nrow(all.loc), 2), ]
+head(unique.all.loc)
+
+unique.all.loc$ID <- gsub("\\..*", "", unique.all.loc$ID)
+head(unique.all.loc)
+
+pos.loc <- read.csv("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_vcf_fix_data.csv", row.names = 1)
+head(pos.loc)
+
+fix.data <- merge(pos.loc, unique.all.loc, by = "ID")
+head(fix.data)
+
+gff <- read.delim("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRansyl_genome.gff", header = FALSE, sep = "\t")
+str(gff)
+colnames(gff) <- c("CHROM", "Source", "Type", "Start", "End",
+                   "Score", "Strand", "Phase", "Attributes")
+head(gff)
+
+
+gff.genes <- gff[gff$Type == "gene", ]
+str(gff.genes)
+
+
+
+## create GRanges objects
+
+pos_gr <- GRanges(
+  seqnames = fix.data$CHROM, # Ensure you have chromosome info, assumed consistent here
+  ranges = IRanges(fix.data$POS, width = 1)
+)
+
+genes_gr <- GRanges(
+  seqnames = gff.genes$CHROM, # Use the actual chromosome column from your data
+  ranges = IRanges(gff.genes$Start, gff.genes$End),
+  mcols = gff.genes[ , -c(1:3)] # Add other gene columns as metadata
+)
+
+## find overlaps
+
+overlaps <- findOverlaps(pos_gr, genes_gr)
+
+## create the resulting table efficiently
+## this joins the original position data with the gene data for matching entries
+
+gene.table.optimized <- cbind(
+  fix.data[queryHits(overlaps), ],
+  gff.genes[subjectHits(overlaps), -c(1:2, 6:8)]
+)
+
+str(gene.table.optimized)
+head(gene.table.optimized)
+
+id.genes <- sub(";.*", "", gene.table.optimized$Attributes)
+id.genes <- gsub("ID=", "", id.genes)
+head(id.genes)
+
+name.genes <- sub("^.*;", "", gene.table.optimized$Attributes)
+name.genes <- gsub("Name=", "", name.genes)
+head(name.genes)
+
+gene.table.optimized$geneID <- id.genes
+gene.table.optimized$geneName <- name.genes
+head(gene.table.optimized)
+
+## GO enrichment
+
+gene.table.GO <- gene.table.optimized[c(2, 3, 9, 14, 15)]
+head(gene.table.GO)
+
+gene.table.GO <- gene.table.GO[!duplicated(gene.table.GO$geneName), ]
+gene.table.GO$geneName <-  gsub("ID=", "", gene.table.GO$geneName)
+gene.table.GO$geneName <-  gsub("_.*", "", gene.table.GO$geneName)
+head(gene.table.GO)
+##rownames(gene.table.GO) <- gene.table.GO$geneName
+gene.table.GO$geneID <-  gsub("aRanSyl1.0_", "", gene.table.GO$geneID)
+head(gene.table.GO)
+str(gene.table.GO)
+write.csv(gene.table.GO, file = "/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/data/aRanSyl_gene_table.csv", row.names = FALSE)
+
+
+## I am using the Genome wide annotation for the Zebra fish published on Bioconductor
+
+#EntrezID_genes <- mapIds(org.Dr.eg.db, keys=gene.table.GO$geneName,
+                         column="ENTREZID", keytype="SYMBOL")
+
+## This is an alternative of the previous code, this time using annotation
+## for the Mouse published on Bioconductor
+
+EntrezID_genes <- mapIds(org.Mm.eg.db, keys=gene.table.GO$geneName,
+                         column="ENTREZID", keytype="SYMBOL")
+
+## I am using the Genome wide annotation for X. leavis published on Bioconductor
+
+#EntrezID_genes <- mapIds(org.Xl.eg.db, keys=gene.table.GO$geneName,
+                         column="ENTREZID", keytype="SYMBOL")
+
+EntrezID_genes_cleaned <- as.matrix(EntrezID_genes[!is.na(EntrezID_genes)])
+EntrezID_genes_cleaned <- as.data.frame(EntrezID_genes_cleaned)
+EntrezID_genes_cleaned$geneName <- row.names(EntrezID_genes_cleaned)
+colnames(EntrezID_genes_cleaned)[1] <- "geneID"
+head(EntrezID_genes_cleaned)
+str(EntrezID_genes_cleaned)
+
+EntrezID_gene_table <- merge(gene.table.GO[-4], EntrezID_genes_cleaned, by = "geneName")
+##rownames(EntrezID_gene_table) <- EntrezID_gene_table$geneName
+head(EntrezID_gene_table)
+
+geneList <- setNames(EntrezID_gene_table$pvalues, EntrezID_gene_table$geneID)
+head(geneList)
+class(geneList)
+
+## I am using the Genome wide annotation for the Zebra fish published on Bioconductor
+
+GOdata <- new("topGOdata",
+	ontology = "BP",
+	allGenes = geneList,
+	geneSelectionFun = function(x) (-log10(x) > 5),
+	annot = annFUN.org , mapping = "org.Dr.eg.db")
+
+
+graph(GOdata)
+test.stat <- new("classicCount", testStatistic = GOFisherTest, name = "Fisher test")
+resultFisher <- getSigGroups(GOdata, test.stat)
+resultFisher
+
+par(cex.lab = 0.7) # Adjust font size
+showSigOfNodes(GOdata, 
+               score(resultFisher), 
+               firstSigNodes = 5, # Number of top significant nodes to display
+               useInfo = 'def',  # Display definition
+               swPlot = TRUE)
+
+
+
+## perform GO enrichment analysis
+
+
+## I am using the Genome wide annotation for the Zebra fish published on Bioconductor
+
+#ego <- enrichGO(gene = EntrezID_gene_table$geneName,
+#                OrgDb = org.Dr.eg.db,
+#                keyType = "SYMBOL", # Or "ENTREZID", "ENSEMBL"
+#                ont = "BP", # Biological Process, CC (Cellular Component), MF (Molecular Function)
+#                pAdjustMethod = "BH",
+#                qvalueCutoff = 0.05)
+
+## I am using the Genome wide annotation for the Mouse published on Bioconductor
+
+ego <- enrichGO(gene = EntrezID_gene_table$geneName,
+                OrgDb = org.Mm.eg.db,
+                keyType = "SYMBOL", # Or "ENTREZID", "ENSEMBL"
+                ont = "BP", # Biological Process, CC (Cellular Component), MF (Molecular Function)
+                pAdjustMethod = "BH",
+                qvalueCutoff = 0.05)
+
+## I am using the Genome wide annotation for X. leavis published on Bioconductor
+
+#ego <- enrichGO(gene = EntrezID_gene_table$geneName,
+#                OrgDb = org.Xl.eg.db,
+#                keyType = "SYMBOL", # Or "ENTREZID", "ENSEMBL"
+#                ont = "BP", # Biological Process, CC (Cellular Component), MF (Molecular Function)
+#                pAdjustMethod = "BH",
+#                qvalueCutoff = 0.05)
+
+## view results
+
+head(ego)
+ego$Description
+
+selected.go <- ego[c(130, 190, 375, 497, 526, 549), ]
+
+
+##as.character(ego$geneID)
+
+
+
+## rearranging data for GOChord plot
+
+## extract the data frame
+
+##results_df <- ego@result
+
+## extract the gene lists for each term
+
+##gene_list_per_term <- strsplit(results_df$geneID, split = "/")
+##names(gene_list_per_term) <- results_df$Description # Naming by description
+
+## now 'gene_list_per_term' is a named list of character vectors.
+## you can access the genes for a specific term like this:
+
+##head(gene_list_per_term)
+
+
+ego.table <- as.data.frame(ego)
+head(ego.table)
+
+terms <- ego.table[c(1, 2, 11, 9)]
+#head(terms)
+terms$Category <- rep("BP", nrow(terms))
+colnames(terms)[c(2, 3, 4)] <- c("Term", "Genes", "adj_pval")
+terms <- terms[c(5, 1, 2, 3, 4)]
+#head(terms)
+
+
+#str(ego.table)
+
+#genes <- data.frame(ID = EntrezID_gene_table$geneName,
+#                    logFC = -log10(EntrezID_gene_table$pvalues))
+
+#unique(genes$ID)
+
+#head(terms)
+#circ <- circle_dat(terms, genes)
+#str(circ)
+#circ$logFC <- ego.table$FoldEnrichment
+#circ$count <- ego.table$Count
+#circ$zscore <- ego.table$zScore
+#head(circ)
+
+
+
+## plotting GOChord
+
+
+
+
+## plot results (e.g., bar plot)
+
+#png("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/imgs/GO.png",
+#    width = 7, height = 7, units = 'in', res = 360)
+
+#barplot(ego, showCategory = 6, label_format = 80)
+
+#dev.off()
+
+## setting up data for plotting manhattan plot
+
+head(fix.data)
+man <- fix.data[c(1, 2, 3, 9)]
+colnames(man) <- c("SNP", "CHR", "BP", "P")
+head(man)
+str(man)
+man$CHR <- as.numeric(factor(man$CHR))
+man <- man[man$CHR %in% c(1:13), ]
+
+## plotting manhattan plot
+
+png("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/imgs/aRanSyl_adaptive_snps.png",
+width = 7, height = 7, units = 'in', res = 360)
+
+  
+par(mgp = c(2.7, 1, 0))
+manhattan(man, chr="CHR", bp="BP", snp="SNP", p="P", xaxt = "n",
+          ylim = c(0, 60), type = "n", cex.axis = 0.8, cex = 0.5)
+grid()
+par(new = TRUE)
+
+manhattan(man, chr="CHR", bp="BP", snp="SNP", p="P", ylim = c(0, 60), yaxt = "n",
+          ylab = "", xlab = "", cex.axis = 0.6, cex = 0.5)
+box()
+#mtext("A", side = 2, line = 3.2, at = 65, las = 1)
+
+p1 <- recordPlot()
+
+p2 <- barplot(ego, showCategory = selected.go$Description, label_format = 80)
+
+plot_grid(p1, p2, ncol = 1, labels = "AUTO", label_fontface = "plain")
+
+dev.off()
+
+
+## nc = resolution, higher is better but slower 
+
+nc = 200
+
+## range of longitude for North America
+
+long.mat <- seq(-180, -50, length = nc)
+
+## range of latitude for North America
+
+lat.mat <- seq(25, 70, length = nc)
+
+## matrix of cells for Europe (nc times nc)
+
+coord.mat <- NULL
+for (x in long.mat) 
+  for (y in lat.mat) coord.mat <- rbind(coord.mat, c(x,y))
+
+
+## extract historical climate
+
+env.new <- terra::extract(x = climate.var, 
+                         y = data.frame(coord.mat), 
+                         cells = FALSE)
+head(env.new)
+tail(env.new)
+class(env.new)
+
+## extract future climate
+
+env.pred <- terra::extract(x = climate_future.var, 
+                          y = data.frame(coord.mat), 
+                          cells = FALSE)
+head(env.pred)
+tail(env.pred)
+class(env.pred)
+
+
+## scaling bioclimatic variables (with the same scale as in the lfmm)
+
+m.x <- apply(X.env, 2, FUN = function(x) mean(x, na.rm = TRUE))
+sd.x <- apply(X.env, 2, function(x) sd(x, na.rm = TRUE))
+
+env.new <- t(t(env.new) - m.x) %*% diag(1/sd.x)
+env.pred <- t(t(env.pred) - m.x) %*% diag(1/sd.x)
+
+## geometric genomic offset for a specific long and lat
+
+mean(((env.new - env.pred)[36139,]  %*% t(B[candidates,]))^2)
+
+## gg contains the Gain et al. geometric GO computed at each matrix cell
+## be patient, it may be very slow for large nc
+
+gg <- NULL
+
+for (i in 1:nrow(env.new)){
+    gg[i] <- mean(((env.new - env.pred)[i,]  %*% t(B[candidates,]))^2, na.rm = TRUE)
+
+}
+
+## matrix of genomic offset for the Europe map
+## NA when below sea level.
+
+go <- t(matrix(gg, byrow =  FALSE, ncol = nc))
+head(go)
+
+hist(as.numeric(go), 
+     main = "Histogram of GO values",
+     xlab = "Geometric GO",
+     las = 1)
+box()
+
+png("/Users/dpadil10/ASU Dropbox/Dylan Padilla/Yale/aRanSyl-PopGen/imgs/Ne_GO.png",
+width = 7, height = 7, units = 'in', res = 360)
+
+
+layout(matrix(c(0, 1, 1, 1, 1, 0,
+                0, 1, 1, 1, 1, 0,
+                2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2), ncol = 6, nrow = 4, byrow = TRUE))
+
+
+sample.size <- paste(rep("(n = ", 9), summary(meta$Pops), ")",  sep = "")
+rownames(barplot.data) <- paste(rownames(barplot.data), sample.size, sep = "\n")
+barplot.data
+
+## plotting Ne values per population
+
+par(mar = c(5.1, 6.1, 4.1, 2.1))
+
+bp <- barplot(t(barplot.data), beside = TRUE, col = "white", ylim = c(0, 130),
+        xlab = "", ylab = "", las = 1, xaxt = "n", yaxt = "n", border = FALSE)
+
+grid()
+par(new = TRUE)
+
+par(mar = c(5.1, 6.1, 4.1, 2.1))
+
+barplot(t(barplot.data), beside = TRUE,
+        col = rep(RColorBrewer::brewer.pal(9,"Paired")[factor(colnames(t(barplot.data)))], each = 3),
+        ylim = c(0, 130),
+        density = rep(c(10, 20, 40), 9),
+        border = TRUE,
+        ylab = expression("Effective population size"~italic((N[e]))),
+        las = 1, cex.lab = 1.5,
+        xaxt = "n")
+
+par(new = TRUE)
+
+barplot(t(barplot.data), beside = TRUE,
+        col = alpha(rep(RColorBrewer::brewer.pal(9,"Paired")[factor(colnames(t(barplot.data)))], each = 3), 0.5),
+        ylim = c(0, 130),
+        border = FALSE,
+        ylab = "",
+        xlab = "",
+        xaxt = "n",
+        yaxt = "n",
+        las = 1)
+
+box()
+
+idx <- 1
+for(i in seq(2, 27, 3)){
+    axis(1, at = bp[i], labels = rownames(barplot.data)[idx], padj = 0.5, cex.axis = 0.8)
+    idx = idx + 1
+}
+
+ci <- aggregate(cbind(CI_lower_0.05, CI_upper_0.05, CI_lower_0.02,
+                      CI_upper_0.02, CI_lower_0.01, CI_upper_0.01)~Pops,
+                data=ci.data , print)
+rownames(ci) <- ci[,1]
+ci <- ci[, -1]
+ci
+
+CIs <- rbind(abs(barplot.data[ , 1]-ci[ , 1]),
+             abs(barplot.data[ , 1]-ci[ , 2]),
+             abs(barplot.data[ , 2]-ci[ , 3]),
+             abs(barplot.data[ , 2]-ci[ , 4]),
+             abs(barplot.data[ , 3]-ci[ , 5]),
+             abs(barplot.data[ , 3]-ci[ , 6]))
+
+rownames(CIs) <- colnames(ci)
+CIs
+
+
+Nes <- rbind(barplot.data[ , 1],
+             barplot.data[ , 2],
+             barplot.data[ , 3])
+
+Nes
+
+bp
+
+idx <- 1
+idx2 <- 2
+for(i in 1:nrow(Nes)){
+
+    arrows(x0 = bp[i, ], y0 = abs(Nes[i, ]-CIs[idx, ]),
+           x1 = bp[i, ], y1 = abs(Nes[i, ]+CIs[idx2, ]),
+           code = 3, angle = 90, length = 0.04, col = "black")
+    idx = idx + 2
+    idx2 = idx2 + 2
+}
+
+legend("topright", legend = c("0.05", "0.02", "0.01"), density = c(10, 20, 40),
+       title = "Critical value", bty = "n", cex = 1, border = TRUE)
+mtext("A", side = 2, line = 3.2, at = 150, las = 1)
+
+
+
+## plotting a map with GO values
+
+## my colors - they might change the story!
+
+my.colors <- colorRampPalette(c("lightblue3", "orange2", "red3"))(100)
+
+par(mar = c(3.1, 4.1, 0, 2.1), mgp = c(2, 0.8, 0))
+
+image(long.mat, lat.mat, go,
+      col = "white",
+      las = 1,
+      xlab = "Longitude",
+      ylab = "Latitude",
+      xlim = c(-180, -50),
+      ylim = c(25, 70),
+      smallplot = NULL,
+      legend = NULL,
+      cex.axis = 1,
+      cex.lab = 1.5)
+
+grid()
+
+par(new = TRUE)
+
+par(mar = c(3.1, 4.1, 0, 2.1), mgp = c(2, 0.8, 0))
+
+image(long.mat, lat.mat, go,
+      col = my.colors,
+      las = 1,
+      xlab = "Longitude",
+      ylab = "Latitude",
+      xlim = c(-180, -50),
+      ylim = c(25, 70),
+      smallplot = NULL,
+      legend = NULL,
+      cex.axis = 1,
+      cex.lab = 1.5)
+
+
+maps::map(add = TRUE, interior = FALSE, col = "grey40")
+map("state", fill = TRUE, col = "transparent", bg = "white", add = TRUE)
+## getting Canada data (sf format)
+canada_sf <- ne_states(country = "Canada", returnclass = "sf")
+map(canada_sf, fill = TRUE, col = "transparent", bg = "white", add = TRUE)
+
+## plotting samples.  Dot sizes correspond to values of Nes
+
+with(data, points(longitude, latitude, pch = 21,
+                  bg = RColorBrewer::brewer.pal(9,"Paired")[Pops],
+                  col = alpha("black", 0.3)))
+
+legend(x = -180, y = 50, legend = levels(data$Pops), pch = 19,
+       col = RColorBrewer::brewer.pal(9,"Paired"), bty = "n",
+       cex = 1)
+
+addnortharrow(pos = "bottomleft", scale = 0.4)
+
+par(new = TRUE)
+
+par(mar = c(3.1, 4.1, 0, 2.1), mgp = c(2, 0.8, 0))
+
+options(scipen = -100)
+options(digits = 2)
+fields::image.plot(long.mat, lat.mat, go,
+                   legend.only = TRUE,
+                   horizontal = TRUE,
+                   legend.args = list(text = "Genomic offset", side = 3,
+                                      line = 0.5, cex = 0.8),
+                   axis.args = list(cex.axis = 0.56, mgp = c(3, 0.5, 0)), ## Adjust axis label size
+                   smallplot = c(0.19, 0.43, 0.28, 0.29), col = my.colors)
+mtext("B", side = 2, line = 3, at = 79, las = 1)
+
+dev.off()

@@ -1,0 +1,475 @@
+**********************************************
+**** Welcome to dartRverse [Version 1.0.6] ****
+**********************************************
+── Core dartRverse packages ────────────────────────────────────── dartRverse ──
+✔ dartR.base 1.0.7     ✔ dartR.data 1.0.8
+── Installed dartRverse packages   ─────────────────────────────── dartRverse ──
+✔ dartR.captive 1.0.2     ✔ dartR.sim     0.70 
+✔ dartR.popgen  1.0.0     ✔ dartR.spatial 1.0.3
+── Not [yet] installed dartRverse packages ─────────────────────── dartRverse ──
+✖ dartR.sexlinked      
+Loading required package: parallel
+Loading required package: furrr
+Loading required package: future
+
+Attaching package: ‘geohippos’
+
+The following object is masked from ‘package:dartR.base’:
+
+    gl.read.vcf
+
+Starting gl.LDNe 
+  Processing genlight object with SNP data
+Starting gl2genepop 
+  Processing genlight object with SNP data
+  The genepop file is saved as:  /var/folders/gr/n14g1r6n2zxg2r4brtrnhwr40000gp/T//RtmpR9HO70/dummy.gen/
+Completed: gl2genepop 
+Number of loci = 111342, 2-digit alleles
+Input file: dummy.gen - GENEPOP format
+Number of loci = 111342, 2-digit alleles
+Method(s): LD
+Locus names - last 6 characters: (only the last 100 are listed)
+184908 184908 184908 184908 184908 184908 184908 184908 
+184908 184911 184912 184912 184912 184917 184917 184917 184917 184917 
+184917 184926 184928 184928 184928 184928 184928 184928 184928 184928 
+184934 184954 184954 184954 184965 184965 184965 184967 184967 184967 
+184967 184967 184967 184967 184967 184967 184967 184967 184967 184967 
+184969 184969 184979 184979 184979 184979 184979 184979 184999 185002 
+185002 185002 185002 185002 185002 185002 185006 185006 185006 185006 
+185006 185006 185015 185015 185015 185015 185015 185015 185015 185035 
+185035 185035 185035 185036 185036 185036 185036 185036 185036 185036 
+185037 185037 185037 185039 185065 185065 185065 185065 185065 185065 
+185065 185065 
+Outputs are written to file popsLD.txt
+Tabular-format LD Output File Name: popsLDxLD.txt
+Starting time: Wed Dec 24 23:12:41 2025
+
+Population     1 [V9_s_188_S52_R1_001]
+-> Total samples = 63, with data missing
+   Allele frequencies are being written to file dummyLoc.txt.
+   * For lowest freq: 0.050
+     Calculating r^2 (at most 39493828 values):
+           1000000 done, at loc. pair (1380, 1617)
+           2000000 done, at loc. pair (2959, 7874)
+           3000000 done, at loc. pair (4085, 90497)
+           4000000 done, at loc. pair (5489, 100737)
+           5000000 done, at loc. pair (7016, 97279)
+           6000000 done, at loc. pair (8657, 30981)
+           7000000 done, at loc. pair (10531, 70569)
+           8000000 done, at loc. pair (12171, 59983)
+           9000000 done, at loc. pair (13951, 53332)
+          10000000 done, at loc. pair (15792, 90228)
+          11000000 done, at loc. pair (17337, 21612)
+          12000000 done, at loc. pair (19035, 94159)
+          13000000 done, at loc. pair (20955, 37118)
+          14000000 done, at loc. pair (22503, 74831)
+          15000000 done, at loc. pair (24439, 79324)
+          16000000 done, at loc. pair (26451, 80443)
+          17000000 done, at loc. pair (28547, 61796)
+          18000000 done, at loc. pair (30476, 100087)
+          19000000 done, at loc. pair (32288, 61401)
+          20000000 done, at loc. pair (34485, 43077)
+          21000000 done, at loc. pair (36507, 92966)
+          22000000 done, at loc. pair (38968, 97309)
+          23000000 done, at loc. pair (41420, 109303)
+          24000000 done, at loc. pair (44321, 64494)
+          25000000 done, at loc. pair (46539, 73137)
+          26000000 done, at loc. pair (49555, 73623)
+          27000000 done, at loc. pair (52015, 102251)
+          28000000 done, at loc. pair (54967, 107219)
+          29000000 done, at loc. pair (58460, 88049)
+          30000000 done, at loc. pair (61284, 84732)
+          31000000 done, at loc. pair (63713, 66795)
+          32000000 done, at loc. pair (66040, 77011)
+          33000000 done, at loc. pair (69230, 75802)
+          34000000 done, at loc. pair (72106, 85998)
+          35000000 done, at loc. pair (76755, 101291)
+          36000000 done, at loc. pair (82983, 110611)
+          37000000 done, at loc. pair (89580, 100407)
+          38000000 done, at loc. pair (98873, 106073)
+     Actual number of r^2-values evaluated = 38486757
+     Initial estimate of Ne:          4.0
+     Final estimate of Ne:            4.1
+     Parameter CI:             4.1             4.1
+     Jackknife CI:             3.5             6.3
+   * For lowest freq: 0.020
+     Calculating r^2 (at most 67053990 values):
+           1000000 done, at loc. pair (670, 53482)
+           2000000 done, at loc. pair (1635, 79442)
+           3000000 done, at loc. pair (2716, 33159)
+           4000000 done, at loc. pair (3309, 59912)
+           5000000 done, at loc. pair (4127, 47111)
+           6000000 done, at loc. pair (5064, 16109)
+           7000000 done, at loc. pair (5923, 97273)
+           8000000 done, at loc. pair (6793, 85852)
+           9000000 done, at loc. pair (7756, 100377)
+          10000000 done, at loc. pair (8969, 37630)
+          11000000 done, at loc. pair (10273, 94939)
+          12000000 done, at loc. pair (11069, 96148)
+          13000000 done, at loc. pair (12130, 70155)
+          14000000 done, at loc. pair (13098, 16961)
+          15000000 done, at loc. pair (14163, 107655)
+          16000000 done, at loc. pair (15364, 74996)
+          17000000 done, at loc. pair (16425, 58172)
+          18000000 done, at loc. pair (17337, 30224)
+          19000000 done, at loc. pair (18234, 52380)
+          20000000 done, at loc. pair (19252, 41825)
+          21000000 done, at loc. pair (20325, 82052)
+          22000000 done, at loc. pair (21386, 60493)
+          23000000 done, at loc. pair (22197, 82052)
+          24000000 done, at loc. pair (23197, 31330)
+          25000000 done, at loc. pair (24368, 100849)
+          26000000 done, at loc. pair (25511, 96143)
+          27000000 done, at loc. pair (26880, 48715)
+          28000000 done, at loc. pair (28201, 105796)
+          29000000 done, at loc. pair (29370, 107256)
+          30000000 done, at loc. pair (30608, 60425)
+          31000000 done, at loc. pair (31829, 33234)
+          32000000 done, at loc. pair (32875, 43954)
+          33000000 done, at loc. pair (34375, 64728)
+          34000000 done, at loc. pair (35745, 101017)
+          35000000 done, at loc. pair (36822, 72362)
+          36000000 done, at loc. pair (38280, 64962)
+          37000000 done, at loc. pair (39862, 99089)
+          38000000 done, at loc. pair (41276, 49168)
+          39000000 done, at loc. pair (42869, 50607)
+          40000000 done, at loc. pair (44339, 54330)
+          41000000 done, at loc. pair (45750, 69815)
+          42000000 done, at loc. pair (47002, 102363)
+          43000000 done, at loc. pair (48585, 86278)
+          44000000 done, at loc. pair (50197, 65096)
+          45000000 done, at loc. pair (51437, 77988)
+          46000000 done, at loc. pair (53124, 93470)
+          47000000 done, at loc. pair (54888, 84839)
+          48000000 done, at loc. pair (56934, 64266)
+          49000000 done, at loc. pair (58665, 59134)
+          50000000 done, at loc. pair (60405, 105236)
+          51000000 done, at loc. pair (61862, 68682)
+          52000000 done, at loc. pair (62739, 64153)
+          53000000 done, at loc. pair (63830, 70163)
+          54000000 done, at loc. pair (65093, 92656)
+          55000000 done, at loc. pair (66942, 111324)
+          56000000 done, at loc. pair (68655, 69378)
+          57000000 done, at loc. pair (69948, 106834)
+          58000000 done, at loc. pair (71533, 88300)
+          59000000 done, at loc. pair (74047, 91961)
+          60000000 done, at loc. pair (77133, 109698)
+          61000000 done, at loc. pair (80911, 110268)
+          62000000 done, at loc. pair (84972, 90330)
+          63000000 done, at loc. pair (89400, 89964)
+          64000000 done, at loc. pair (94602, 99163)
+          65000000 done, at loc. pair (101814, 106832)
+     Actual number of r^2-values evaluated = 65434076
+     Initial estimate of Ne:          4.1
+     Final estimate of Ne:            4.9
+     Parameter CI:             4.9             4.9
+     Jackknife CI:             3.5             7.4
+   * For lowest freq: 0.010
+     Calculating r^2 (at most 79537578 values):
+           1000000 done, at loc. pair (554, 76829)
+           2000000 done, at loc. pair (1301, 75910)
+           3000000 done, at loc. pair (2267, 65358)
+           4000000 done, at loc. pair (3003, 82396)
+           5000000 done, at loc. pair (3530, 71248)
+           6000000 done, at loc. pair (4178, 61743)
+           7000000 done, at loc. pair (4966, 40977)
+           8000000 done, at loc. pair (5749, 22468)
+           9000000 done, at loc. pair (6515, 36970)
+          10000000 done, at loc. pair (7331, 62527)
+          11000000 done, at loc. pair (8136, 48938)
+          12000000 done, at loc. pair (9107, 79238)
+          13000000 done, at loc. pair (10254, 101519)
+          14000000 done, at loc. pair (10799, 56366)
+          15000000 done, at loc. pair (11670, 43053)
+          16000000 done, at loc. pair (12491, 72157)
+          17000000 done, at loc. pair (13454, 60802)
+          18000000 done, at loc. pair (14283, 27452)
+          19000000 done, at loc. pair (15267, 94957)
+          20000000 done, at loc. pair (16193, 95137)
+          21000000 done, at loc. pair (17057, 55999)
+          22000000 done, at loc. pair (17716, 93244)
+          23000000 done, at loc. pair (18604, 24145)
+          24000000 done, at loc. pair (19360, 63298)
+          25000000 done, at loc. pair (20355, 52653)
+          26000000 done, at loc. pair (21200, 64427)
+          27000000 done, at loc. pair (21950, 36460)
+          28000000 done, at loc. pair (22629, 33773)
+          29000000 done, at loc. pair (23565, 27976)
+          30000000 done, at loc. pair (24523, 88695)
+          31000000 done, at loc. pair (25473, 110297)
+          32000000 done, at loc. pair (26544, 63541)
+          33000000 done, at loc. pair (27719, 53158)
+          34000000 done, at loc. pair (28681, 32021)
+          35000000 done, at loc. pair (29632, 105156)
+          36000000 done, at loc. pair (30631, 84840)
+          37000000 done, at loc. pair (31752, 109020)
+          38000000 done, at loc. pair (32634, 41072)
+          39000000 done, at loc. pair (33935, 36767)
+          40000000 done, at loc. pair (35029, 74834)
+          41000000 done, at loc. pair (36126, 103247)
+          42000000 done, at loc. pair (36987, 103438)
+          43000000 done, at loc. pair (38286, 95139)
+          44000000 done, at loc. pair (39697, 50514)
+          45000000 done, at loc. pair (41021, 62899)
+          46000000 done, at loc. pair (42114, 69106)
+          47000000 done, at loc. pair (43259, 94543)
+          48000000 done, at loc. pair (44642, 49444)
+          49000000 done, at loc. pair (45811, 91794)
+          50000000 done, at loc. pair (46942, 81185)
+          51000000 done, at loc. pair (48105, 59961)
+          52000000 done, at loc. pair (49588, 63592)
+          53000000 done, at loc. pair (50763, 83279)
+          54000000 done, at loc. pair (51687, 71865)
+          55000000 done, at loc. pair (53326, 57011)
+          56000000 done, at loc. pair (54747, 82620)
+          57000000 done, at loc. pair (56425, 91268)
+          58000000 done, at loc. pair (57803, 87791)
+          59000000 done, at loc. pair (59386, 80587)
+          60000000 done, at loc. pair (60802, 70144)
+          61000000 done, at loc. pair (62013, 89527)
+          62000000 done, at loc. pair (62735, 90447)
+          63000000 done, at loc. pair (63656, 71783)
+          64000000 done, at loc. pair (64722, 110611)
+          65000000 done, at loc. pair (66098, 69971)
+          66000000 done, at loc. pair (67688, 76233)
+          67000000 done, at loc. pair (69035, 101976)
+          68000000 done, at loc. pair (70160, 89486)
+          69000000 done, at loc. pair (71491, 76761)
+          70000000 done, at loc. pair (73390, 105170)
+          71000000 done, at loc. pair (76003, 83060)
+          72000000 done, at loc. pair (78651, 93616)
+          73000000 done, at loc. pair (82006, 97758)
+          74000000 done, at loc. pair (85217, 105978)
+          75000000 done, at loc. pair (88876, 99945)
+          76000000 done, at loc. pair (92761, 105307)
+          77000000 done, at loc. pair (97688, 103687)
+          78000000 done, at loc. pair (106947, 108638)
+     Actual number of r^2-values evaluated = 78114355
+     Initial estimate of Ne:          5.3
+     Final estimate of Ne:            5.7
+     Parameter CI:             5.7             5.7
+     Jackknife CI:             3.7             7.9
+   * For lowest freq: 0.000
+     Calculating r^2 (at most 77744215 values):
+           1000000 done, at loc. pair (556, 107832)
+           2000000 done, at loc. pair (1358, 94371)
+           3000000 done, at loc. pair (2326, 63693)
+           4000000 done, at loc. pair (3080, 84895)
+           5000000 done, at loc. pair (3569, 46407)
+           6000000 done, at loc. pair (4230, 23968)
+           7000000 done, at loc. pair (5118, 93355)
+           8000000 done, at loc. pair (5883, 17122)
+           9000000 done, at loc. pair (6638, 101814)
+          10000000 done, at loc. pair (7486, 12117)
+          11000000 done, at loc. pair (8372, 75050)
+          12000000 done, at loc. pair (9585, 48534)
+          13000000 done, at loc. pair (10419, 20608)
+          14000000 done, at loc. pair (11122, 44808)
+          15000000 done, at loc. pair (12022, 67637)
+          16000000 done, at loc. pair (12912, 68612)
+          17000000 done, at loc. pair (13779, 50105)
+          18000000 done, at loc. pair (14685, 23978)
+          19000000 done, at loc. pair (15716, 31874)
+          20000000 done, at loc. pair (16847, 56522)
+          21000000 done, at loc. pair (17481, 47499)
+          22000000 done, at loc. pair (18215, 40220)
+          23000000 done, at loc. pair (19142, 71309)
+          24000000 done, at loc. pair (20012, 65373)
+          25000000 done, at loc. pair (21030, 72312)
+          26000000 done, at loc. pair (21806, 56077)
+          27000000 done, at loc. pair (22435, 65147)
+          28000000 done, at loc. pair (23346, 71251)
+          29000000 done, at loc. pair (24338, 98727)
+          30000000 done, at loc. pair (25326, 91456)
+          31000000 done, at loc. pair (26461, 29063)
+          32000000 done, at loc. pair (27648, 91061)
+          33000000 done, at loc. pair (28622, 65487)
+          34000000 done, at loc. pair (29590, 89971)
+          35000000 done, at loc. pair (30617, 60219)
+          36000000 done, at loc. pair (31754, 78414)
+          37000000 done, at loc. pair (32646, 76665)
+          38000000 done, at loc. pair (33972, 105184)
+          39000000 done, at loc. pair (35096, 85239)
+          40000000 done, at loc. pair (36257, 92294)
+          41000000 done, at loc. pair (37152, 45129)
+          42000000 done, at loc. pair (38528, 64153)
+          43000000 done, at loc. pair (39903, 54914)
+          44000000 done, at loc. pair (41204, 91247)
+          45000000 done, at loc. pair (42492, 106620)
+          46000000 done, at loc. pair (43727, 106689)
+          47000000 done, at loc. pair (45124, 56898)
+          48000000 done, at loc. pair (46253, 86498)
+          49000000 done, at loc. pair (47354, 54384)
+          50000000 done, at loc. pair (48683, 75415)
+          51000000 done, at loc. pair (50181, 86352)
+          52000000 done, at loc. pair (51169, 60285)
+          53000000 done, at loc. pair (52647, 79240)
+          54000000 done, at loc. pair (54157, 85514)
+          55000000 done, at loc. pair (55660, 81415)
+          56000000 done, at loc. pair (57287, 66752)
+          57000000 done, at loc. pair (58863, 66729)
+          58000000 done, at loc. pair (60306, 98332)
+          59000000 done, at loc. pair (61647, 87830)
+          60000000 done, at loc. pair (62561, 90129)
+          61000000 done, at loc. pair (63470, 68863)
+          62000000 done, at loc. pair (64501, 67400)
+          63000000 done, at loc. pair (65810, 83454)
+          64000000 done, at loc. pair (67632, 71866)
+          65000000 done, at loc. pair (68873, 95251)
+          66000000 done, at loc. pair (70038, 98467)
+          67000000 done, at loc. pair (71392, 102247)
+          68000000 done, at loc. pair (73360, 110452)
+          69000000 done, at loc. pair (75954, 88680)
+          70000000 done, at loc. pair (78742, 110129)
+          71000000 done, at loc. pair (82183, 98465)
+          72000000 done, at loc. pair (85749, 93213)
+          73000000 done, at loc. pair (89420, 94473)
+          74000000 done, at loc. pair (93713, 94661)
+          75000000 done, at loc. pair (98883, 103846)
+     Actual number of r^2-values evaluated = 75876232
+     Initial estimate of Ne:          5.1
+     Final estimate of Ne:            5.5
+     Parameter CI:             5.5             5.5
+     Jackknife CI:             3.7             7.8
+   * For lowest freq:    0+
+     Calculating r^2 (at most 114027651 values):
+           1000000 done, at loc. pair (477, 15872)
+           2000000 done, at loc. pair (954, 89262)
+           3000000 done, at loc. pair (1476, 29760)
+           4000000 done, at loc. pair (2126, 66283)
+           5000000 done, at loc. pair (2734, 82451)
+           6000000 done, at loc. pair (3211, 47354)
+           7000000 done, at loc. pair (3559, 54890)
+           8000000 done, at loc. pair (4059, 77325)
+           9000000 done, at loc. pair (4553, 101306)
+          10000000 done, at loc. pair (5215, 90920)
+          11000000 done, at loc. pair (5749, 34100)
+          12000000 done, at loc. pair (6333, 28998)
+          13000000 done, at loc. pair (6806, 18648)
+          14000000 done, at loc. pair (7394, 18853)
+          15000000 done, at loc. pair (8009, 48160)
+          16000000 done, at loc. pair (8697, 75411)
+          17000000 done, at loc. pair (9537, 54856)
+          18000000 done, at loc. pair (10106, 91003)
+          19000000 done, at loc. pair (10527, 62674)
+          20000000 done, at loc. pair (11085, 33922)
+          21000000 done, at loc. pair (11648, 55879)
+          22000000 done, at loc. pair (12266, 38510)
+          23000000 done, at loc. pair (12917, 74704)
+          24000000 done, at loc. pair (13550, 103026)
+          25000000 done, at loc. pair (14132, 42319)
+          26000000 done, at loc. pair (14808, 36535)
+          27000000 done, at loc. pair (15408, 104853)
+          28000000 done, at loc. pair (16112, 19578)
+          29000000 done, at loc. pair (16841, 80911)
+          30000000 done, at loc. pair (17283, 62271)
+          31000000 done, at loc. pair (17837, 50806)
+          32000000 done, at loc. pair (18439, 36284)
+          33000000 done, at loc. pair (19073, 84726)
+          34000000 done, at loc. pair (19648, 103702)
+          35000000 done, at loc. pair (20366, 65404)
+          36000000 done, at loc. pair (21032, 103249)
+          37000000 done, at loc. pair (21586, 62486)
+          38000000 done, at loc. pair (22122, 31104)
+          39000000 done, at loc. pair (22605, 88502)
+          40000000 done, at loc. pair (23211, 56191)
+          41000000 done, at loc. pair (23883, 50843)
+          42000000 done, at loc. pair (24591, 99101)
+          43000000 done, at loc. pair (25300, 47368)
+          44000000 done, at loc. pair (25948, 42602)
+          45000000 done, at loc. pair (26675, 85032)
+          46000000 done, at loc. pair (27452, 27894)
+          47000000 done, at loc. pair (28226, 37757)
+          48000000 done, at loc. pair (28931, 72536)
+          49000000 done, at loc. pair (29582, 70137)
+          50000000 done, at loc. pair (30341, 35785)
+          51000000 done, at loc. pair (31026, 96520)
+          52000000 done, at loc. pair (31760, 75126)
+          53000000 done, at loc. pair (32412, 68647)
+          54000000 done, at loc. pair (33188, 83242)
+          55000000 done, at loc. pair (34179, 95419)
+          56000000 done, at loc. pair (34910, 72677)
+          57000000 done, at loc. pair (35801, 104756)
+          58000000 done, at loc. pair (36462, 84850)
+          59000000 done, at loc. pair (37127, 82826)
+          60000000 done, at loc. pair (37910, 86595)
+          61000000 done, at loc. pair (38927, 74163)
+          62000000 done, at loc. pair (39881, 90060)
+          63000000 done, at loc. pair (40813, 67115)
+          64000000 done, at loc. pair (41617, 104754)
+          65000000 done, at loc. pair (42433, 48704)
+          66000000 done, at loc. pair (43213, 96155)
+          67000000 done, at loc. pair (44153, 48711)
+          68000000 done, at loc. pair (45152, 77453)
+          69000000 done, at loc. pair (45989, 46176)
+          70000000 done, at loc. pair (46797, 63652)
+          71000000 done, at loc. pair (47531, 48530)
+          72000000 done, at loc. pair (48574, 101598)
+          73000000 done, at loc. pair (49588, 58041)
+          74000000 done, at loc. pair (50425, 52541)
+          75000000 done, at loc. pair (51243, 61019)
+          76000000 done, at loc. pair (52156, 70751)
+          77000000 done, at loc. pair (53088, 102660)
+          78000000 done, at loc. pair (54030, 73429)
+          79000000 done, at loc. pair (54967, 85654)
+          80000000 done, at loc. pair (56032, 104203)
+          81000000 done, at loc. pair (57151, 111322)
+          82000000 done, at loc. pair (58177, 67974)
+          83000000 done, at loc. pair (59371, 77242)
+          84000000 done, at loc. pair (60382, 104339)
+          85000000 done, at loc. pair (61367, 69709)
+          86000000 done, at loc. pair (62148, 101636)
+          87000000 done, at loc. pair (62770, 70588)
+          88000000 done, at loc. pair (63476, 75208)
+          89000000 done, at loc. pair (64203, 102176)
+          90000000 done, at loc. pair (65093, 93615)
+          91000000 done, at loc. pair (66218, 109520)
+          92000000 done, at loc. pair (67454, 106684)
+          93000000 done, at loc. pair (68513, 70563)
+          94000000 done, at loc. pair (69368, 82079)
+          95000000 done, at loc. pair (70209, 101260)
+          96000000 done, at loc. pair (71206, 92437)
+          97000000 done, at loc. pair (72374, 88221)
+          98000000 done, at loc. pair (74047, 80631)
+          99000000 done, at loc. pair (75766, 100745)
+         100000000 done, at loc. pair (77259, 77841)
+         101000000 done, at loc. pair (79127, 84946)
+         102000000 done, at loc. pair (81462, 89495)
+         103000000 done, at loc. pair (83329, 87765)
+         104000000 done, at loc. pair (85861, 107240)
+         105000000 done, at loc. pair (88302, 94602)
+         106000000 done, at loc. pair (90946, 93565)
+         107000000 done, at loc. pair (93807, 103960)
+         108000000 done, at loc. pair (97340, 106073)
+         109000000 done, at loc. pair (102414, 108470)
+     Actual number of r^2-values evaluated = 109671150
+     Initial estimate of Ne:          6.1
+     Final estimate of Ne:            6.4
+     Parameter CI:             6.4             6.4
+     Jackknife CI:             4.0             8.3
+$V9_s_188_S52_R1
+                    Statistic Frequency 1 Frequency 2 Frequency 3 Frequency 4
+ Lowest Allele Frequency Used       0.050       0.020       0.010       No S*
+    Harmonic Mean Sample Size        54.5        54.8        54.6          55
+      Independent Comparisons    38486757    65434076    78114355    75876232
+                  OverAll r^2    0.060144    0.058423    0.056495    0.056869
+          Expected r^2 Sample    0.019276    0.019177    0.019231    0.019082
+                Estimated Ne^         4.1         4.9         5.7         5.5
+            CI low Parametric         4.1         4.9         5.7         5.5
+           CI high Parametric         4.1         4.9         5.7         5.5
+             CI low JackKnife         3.5         3.5         3.7         3.7
+            CI high JackKnife         6.3         7.4         7.9         7.8
+ Frequency 5
+          0+
+        55.2
+   109671150
+    0.054287
+    0.019005
+         6.4
+         6.4
+         6.4
+           4
+         8.3
+
+  The results are saved in: /var/folders/gr/n14g1r6n2zxg2r4brtrnhwr40000gp/T//RtmpR9HO70/popsLD.txt 
+Completed: gl.LDNe 

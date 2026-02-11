@@ -1,0 +1,78 @@
+## This script was designed to produce a genind object per population ofaRanSyl  ##
+
+## loading packages
+
+library(adegenet)
+library(ade4)
+library(car)
+library(canadamaps)
+library(data.table)
+library(dartRverse)
+library(ecodist)
+library(hierfstat)
+library(LEA)
+library(lfmm)
+library(maps)
+library(mapplots)
+library(mapproj)
+library(rnaturalearth)
+library(pegas)
+library(poppr)
+library(prettymapr)
+library(qvalue)
+library(sf)
+library(scales)
+library(SeqArray)
+library(SeqVarTools)
+library(shape)
+library(SNPRelate)
+library(stringr)
+library(vcfR)
+library(xtable)
+
+
+## loading project
+
+load("/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_genind.RData")
+meta <- read.csv("/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_metadata.csv")
+
+tapply(meta$seq.run, meta$pop, length)
+
+meta$pop <- as.factor(meta$pop)
+
+aRanSyl_genind_list <- vector("list", length(levels(meta$pop)))
+idx <- 1
+
+for(i in levels(meta$pop)){
+
+aRanSyl_genind_pop <- aRanSyl_genind
+
+pop <- meta[meta$pop == i, ]
+pop.ind <- pop$id
+filter.ind <- indNames(aRanSyl_genind_pop)[indNames(aRanSyl_genind_pop) %in% pop.ind]
+aRanSyl_genind_pop <- aRanSyl_genind_pop[filter.ind, ]
+aRanSyl_genind_pop$pop <- as.factor(rep(i, length(pop.ind)))
+aRanSyl_genind_list[[idx]] <- aRanSyl_genind_pop
+names(aRanSyl_genind_list)[[idx]] <- paste('aRanSyl_genind_pop','_',i, sep = '')
+
+idx = idx + 1
+
+}
+
+save(aRanSyl_genind_list, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_genind_list.RData")
+
+
+
+## converting to genlight objects
+
+aRanSyl_gl_list <- aRanSyl_genind_list
+
+for(i in 1:length(levels(meta$pop))){
+
+aRanSyl_gl_list[[i]] <- gi2gl(aRanSyl_gl_list[[i]], parallel = FALSE, verbose = NULL)
+names(aRanSyl_gl_list)[[i]] <- paste('aRanSyl_gl_pop','_',i, sep = '')
+
+}
+
+
+save(aRanSyl_gl_list, file = "/gpfs/gibbs/project/skelly/dp996/Wood-frog_ddRADseq/data/aRanSyl_gl_list.RData")
